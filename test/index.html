@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Non-Custodial SDK Wrapper Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007cba;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #005a87;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .input-group {
+            margin: 10px 0;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .input-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+              .log {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            height: 300px;
+            overflow-y: auto;
+            overflow-x: auto;
+
+            font-family: monospace;
+            font-size: 12px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.ready {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .info-box {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .checklist {
+            list-style: none;
+            padding-left: 0;
+        }
+        .checklist li {
+            margin: 12px 0;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+        .checklist input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Non-Custodial Browser SDK Demo</h1>
+        
+        <div id="status" class="status ready">
+            Status: Ready to test
+        </div>
+
+        <!-- Log Section - moved to top for better visibility -->
+        <div class="log" id="log">
+            <div>🚀 Demo app loaded. Click "Initialize SDK" to start testing.</div>
+        </div>
+
+        <!-- Basic SDK Operations -->
+        <div class="section">
+            <h3>🚀 Basic SDK Operations</h3>
+            <div class="button-group">
+                <button id="initBtn">Initialize SDK</button>
+                <button id="getPublicKeyBtn" disabled>Get Public Key</button>
+                <button id="statusBtn" disabled>Get Status</button>
+                <button id="clearBtn">Clear Log</button>
+            </div>
+        </div>
+
+        <!-- Session Management -->
+        <div class="section">
+            <h3>🔐 Session Management</h3>
+            <div class="input-group">
+                <label for="authCode">Authentication Code:</label>
+                <input type="text" id="authCode" placeholder="Enter authentication code from email">
+            </div>
+            <div class="input-group">
+                <label for="authenticatorId">Authenticator ID:</label>
+                <input type="text" id="authenticatorId" placeholder="Enter authenticator ID">
+            </div>
+            <div class="button-group">
+                <button id="startSessionBtn" disabled>Start Session</button>
+                <button id="checkSessionBtn" disabled>Check Session</button>
+                <button id="clearSessionBtn" disabled>Clear Session</button>
+            </div>
+        </div>
+
+        <!-- Payout Signing -->
+        <div class="section">
+            <h3>✍️ Payout Signing</h3>
+            <div class="input-group">
+                <label for="payoutPayload">Payout Payload (JSON):</label>
+                <textarea id="payoutPayload" placeholder='{"payoutRequestBody": {...}, "muralOrganizationAccountAddress": "0x...", "muralOrganizationAccountChainId": "1"}'></textarea>
+            </div>
+            <div class="button-group">
+                <button id="signPayoutBtn" disabled>Sign Payout</button>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>🧾 Non-Custodial Flow Checklist</h3>
+            <ul class="checklist">
+                <li><input type="checkbox"> <strong>Create Non-Custodial Org</strong> Use POST /api/organizations with type "nonCustodialIndividual" or "nonCustodialBusiness". Check Swagger for payload examples showing how this should look.</li>
+                <li><input type="checkbox"> <strong>Initialize SDK & Get Public Key</strong> Start the SDK, get the public key, and call the POST /api/approvers/non-custodial/initiate-challenge endpoint with the public key and the Third Party User linked to the non-custodial org</li>
+                <li><input type="checkbox"> <strong>Receive Authentication Codes</strong> The challenge endpoint returns a code that should be saved, and sends a code to the org's email</li>
+                <li><input type="checkbox"> <strong>Start SDK Session</strong> Use startSession with the email code and the challenge response code</li>
+                <li><input type="checkbox"> <strong>Create a Payout</strong> Create a payout for the non-custodial user via the API. Check Swagger for payout payload examples.</li>
+                <li><input type="checkbox"> <strong>Get Body to Sign</strong> Call GET /api/payouts/payout/non-custodial/body-to-sign/{id} with the payout ID from the previous step</li>
+                <li><input type="checkbox"> <strong>Sign & Execute</strong> Copy the body from the previous step exactly as received and use the SDK to sign it. Then call POST /api/payouts/payout/non-custodial/execute/{id} sending the signature in the body and the payout ID from the previous step</li>
+                <li><input type="checkbox"> <strong>Done! 🎉</strong> The non-custodial payout is successfully executed</li>
+            </ul>
+            <div style="margin-top: 15px; padding: 10px; background-color: #fff3cd; border-radius: 5px; border: 1px solid #ffeaa7;">
+                <strong>💡 Important:</strong> Use the non-custodial org ID in the "on-behalf-of" header for endpoints linked to the non custodial org such as the challenge, body-to-sign, and execute.
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden iframe container for Authentication -->
+    <div id="auth-iframe-container-id" style="display: none;"></div>
+
+    <script type="module">
+        import { NonCustodialSDK } from '@muralpay/browser-sdk';
+        
+        let wrapper = null;
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: #666;">[${timestamp}]</span> ${message}`;
+            if (type === 'error') {
+                logEntry.style.color = '#dc3545';
+            } else if (type === 'success') {
+                logEntry.style.color = '#28a745';
+            } else if (type === 'warning') {
+                logEntry.style.color = '#ffc107';
+            }
+            log.appendChild(logEntry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function updateStatus(message, type = 'ready') {
+            status.textContent = `Status: ${message}`;
+            status.className = `status ${type}`;
+        }
+
+        function enableButtons(buttonIds) {
+            buttonIds.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.disabled = false;
+            });
+        }
+
+        function disableButtons(buttonIds) {
+            buttonIds.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.disabled = true;
+            });
+        }
+
+        // Initialize SDK
+        document.getElementById('initBtn').addEventListener('click', async () => {
+            addLog('🔄 Initializing SDK...');
+            try {
+                // Create iframe container for Authentication
+                const iframeContainer = document.getElementById('auth-iframe-container-id');
+                
+                wrapper = await NonCustodialSDK.createInstance({
+                    iframeElement: iframeContainer,
+                    iframeContainerId: 'auth-iframe-container-id'
+                });
+                
+                addLog('✅ SDK initialized successfully!', 'success');
+                updateStatus('Initialized');
+                
+                enableButtons(['getPublicKeyBtn', 'statusBtn', 'startSessionBtn', 'checkSessionBtn', 'clearSessionBtn']);
+                document.getElementById('initBtn').disabled = true;
+            } catch (error) {
+                addLog(`❌ Error: ${error.message}`, 'error');
+                updateStatus('Error', 'error');
+            }
+        });
+
+        // Get Public Key
+        document.getElementById('getPublicKeyBtn').addEventListener('click', () => {
+            if (wrapper) {
+                addLog('🔑 Getting public key...');
+                try {
+                    const publicKey = wrapper.getPublicKey();
+                    if (publicKey) {
+                        addLog(`🔑 Public Key: ${publicKey}`, 'success');
+                        addLog('💡 Use this public key to initiate email authentication', 'warning');
+                    } else {
+                        addLog('❌ Failed to get public key', 'error');
+                    }
+                } catch (error) {
+                    addLog(`❌ Error getting public key: ${error.message}`, 'error');
+                }
+            }
+        });
+
+        // Start Session
+        document.getElementById('startSessionBtn').addEventListener('click', async () => {
+            if (wrapper) {
+                const code = document.getElementById('authCode').value;
+                const authenticatorId = document.getElementById('authenticatorId').value;
+                
+                if (!code || !authenticatorId) {
+                    addLog('❌ Please enter both authentication code and authenticator ID', 'error');
+                    return;
+                }
+
+                addLog('🔐 Starting session...');
+                try {
+                    await wrapper.startSession({ code, authenticatorId });
+                    addLog('✅ Session started successfully!', 'success');
+                    updateStatus('Session Active');
+                    enableButtons(['signPayoutBtn']);
+                } catch (error) {
+                    addLog(`❌ Session start failed: ${error.message}`, 'error');
+                }
+            }
+        });
+
+        // Check Session
+        document.getElementById('checkSessionBtn').addEventListener('click', () => {
+            if (wrapper) {
+                addLog('🔍 Checking session status...');
+                const isActive = wrapper.isSessionActive();
+                const expiry = wrapper.getClientSessionExpiry();
+                addLog(`🔍 Session Active: ${isActive}`, isActive ? 'success' : 'warning');
+                if (expiry) {
+                    addLog(`🔍 Session Expires: ${expiry.toLocaleString()}`, 'info');
+                }
+            }
+        });
+
+        // Clear Session
+        document.getElementById('clearSessionBtn').addEventListener('click', () => {
+            if (wrapper) {
+                addLog('🧹 Clearing session...');
+                wrapper.clearSession();
+                addLog('✅ Session cleared', 'success');
+                updateStatus('Session Cleared', 'warning');
+                disableButtons(['signPayoutBtn']);
+            }
+        });
+
+        // Sign Payout
+        document.getElementById('signPayoutBtn').addEventListener('click', async () => {
+            if (wrapper) {
+                const payloadText = document.getElementById('payoutPayload').value;
+                
+                if (!payloadText) {
+                    addLog('❌ Please enter a payout payload', 'error');
+                    return;
+                }
+
+                try {
+                    const payload = JSON.parse(payloadText);
+                    addLog('✍️ Signing payout payload...');
+                    
+                    const signature = await wrapper.signPayoutPayload(payload);
+                    if (signature) {
+                        addLog(`✅ Payout signed successfully!`, 'success');
+                        addLog(`✍️ Signature: ${signature}`, 'success');
+                    }
+                } catch (error) {
+                    if (error.message.includes('JSON')) {
+                        addLog('❌ Invalid JSON in payout payload', 'error');
+                    } else {
+                        addLog(`❌ Signing failed: ${error.message}`, 'error');
+                    }
+                }
+            }
+        });
+
+        // Get Status
+        document.getElementById('statusBtn').addEventListener('click', () => {
+            if (wrapper) {
+                addLog('📊 Getting SDK status...');
+                try {
+                    const isActive = wrapper.isSessionActive();
+                    const expiry = wrapper.getClientSessionExpiry();
+                    const publicKey = wrapper.getPublicKey();
+                    
+                    const sdkStatus = {
+                        sessionActive: isActive,
+                        sessionExpiry: expiry?.toISOString() || null,
+                        publicKey: publicKey
+                    };
+                    
+                    addLog(`📊 Status: ${JSON.stringify(sdkStatus, null, 2)}`, 'success');
+                } catch (error) {
+                    addLog(`❌ Status check failed: ${error.message}`, 'error');
+                }
+            }
+        });
+
+        // Clear Log
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            log.innerHTML = '<div>🧹 Log cleared.</div>';
+        });
+
+        // Initial log
+        addLog('🎯 Demo app ready. Real Non-Custodial Browser SDK loaded!');
+    </script>
+</body>
+</html> 
