@@ -1,36 +1,31 @@
 import React from 'react';
 import { Step, Button, FormInput, InfoBox, ResultDisplay } from '../ui';
 import { MuralApiClient } from '../../index';
+import { useNonCustodialContext } from '../../context/NonCustodialContext';
 
-export interface TosLinkStepProps {
+interface TosLinkStepProps {
   stepNumber: number;
-  currentStep: number;
-  isCompleted: boolean;
-  isLoading: boolean;
-  tosLink: string;
-  tosLinkVisible: boolean;
-  orgId: string;
-  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
-  markStepComplete: (stepIndex: number) => void;
-  setTosLink: (link: string) => void;
-  setTosLinkVisible: (visible: boolean) => void;
-  setLoading: (loading: boolean) => void;
 }
 
 export const TosLinkStep: React.FC<TosLinkStepProps> = ({
-  stepNumber,
-  currentStep,
-  isCompleted,
-  isLoading,
-  tosLink,
-  tosLinkVisible,
-  orgId,
-  addLog,
-  markStepComplete,
-  setTosLink,
-  setTosLinkVisible,
-  setLoading
+  stepNumber
 }) => {
+  const {
+    currentStep,
+    completedSteps,
+    loadingStates,
+    tosLink,
+    tosLinkVisible,
+    orgId,
+    addLog,
+    markStepComplete,
+    setTosLink,
+    setTosLinkVisible,
+    setStepLoading
+  } = useNonCustodialContext();
+
+  const isCompleted = completedSteps[stepNumber - 1];
+  const isLoading = loadingStates[stepNumber - 1];
   const isActive = currentStep === stepNumber;
 
   const handleGetTosLink = async () => {
@@ -39,7 +34,7 @@ export const TosLinkStep: React.FC<TosLinkStepProps> = ({
       return;
     }
     
-    setLoading(true);
+    setStepLoading(stepNumber - 1, true);
     addLog('🔄 Step 2: Getting Terms of Service link...');
     
     try {
@@ -48,13 +43,13 @@ export const TosLinkStep: React.FC<TosLinkStepProps> = ({
       addLog(`✅ TOS link retrieved successfully!`, 'success');
       setTosLink(link);
       setTosLinkVisible(true);
-      markStepComplete(1);
+      markStepComplete(stepNumber - 1);
       addLog(`🔗 Please open the TOS link and complete the acceptance process`, 'warning');
       addLog(`➡️ Next: Accept Terms of Service, then initialize SDK`, 'info');
     } catch (error) {
       addLog(`❌ Failed to get TOS link: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
-      setLoading(false);
+      setStepLoading(stepNumber - 1, false);
     }
   };
 

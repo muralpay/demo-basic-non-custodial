@@ -1,77 +1,56 @@
 import React from 'react';
 import { Step, Button, FormInput, RadioGroup, InfoBox, ResultDisplay } from '../ui';
 import { MuralApiClient } from '../../index';
+import { useNonCustodialContext } from '../../context/NonCustodialContext';
 
-export interface CreateOrganizationStepProps {
-  // Form state
-  orgType: 'nonCustodialIndividual' | 'nonCustodialBusiness';
-  setOrgType: (value: 'nonCustodialIndividual' | 'nonCustodialBusiness') => void;
-  firstName: string;
-  setFirstName: (value: string) => void;
-  lastName: string;
-  setLastName: (value: string) => void;
-  email: string;
-  setEmail: (value: string) => void;
-  businessName: string;
-  setBusinessName: (value: string) => void;
-  businessEmail: string;
-  setBusinessEmail: (value: string) => void;
-  approvers: string;
-  setApprovers: (value: string) => void;
-  
-  // Step state
+interface CreateOrganizationStepProps {
   stepNumber: number;
-  currentStep: number;
-  isCompleted: boolean;
-  isLoading: boolean;
-  
-  // Results
-  orgId: string;
-  approverId: string;
-  approversList: Array<{id: string, name: string, email: string}>;
-  selectedApproverIndex: number;
-
-  // Actions
-  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
-  markStepComplete: (stepIndex: number) => void;
-  setOrgId: (id: string) => void;
-  setApproverId: (id: string) => void;
-  setApproversList: (approvers: Array<{id: string, name: string, email: string}>) => void;
-  setSelectedApproverIndex: (index: number) => void;
-  setLoading: (loading: boolean) => void;
 }
 
 export const CreateOrganizationStep: React.FC<CreateOrganizationStepProps> = ({
-  orgType,
-  setOrgType,
-  firstName,
-  setFirstName,
-  lastName,
-  setLastName,
-  email,
-  setEmail,
-  businessName,
-  setBusinessName,
-  businessEmail,
-  setBusinessEmail,
-  approvers,
-  setApprovers,
-  stepNumber,
-  currentStep,
-  isCompleted,
-  isLoading,
-  orgId,
-  approverId,
-  approversList,
-  selectedApproverIndex,
-  addLog,
-  markStepComplete,
-  setOrgId,
-  setApproverId,
-  setApproversList,
-  setSelectedApproverIndex,
-  setLoading
+  stepNumber
 }) => {
+  const {
+    // Form state
+    orgType,
+    setOrgType,
+    firstName,
+    setFirstName,
+    lastName,
+    setLastName,
+    email,
+    setEmail,
+    businessName,
+    setBusinessName,
+    businessEmail,
+    setBusinessEmail,
+    approvers,
+    setApprovers,
+    
+    // Step state
+    currentStep,
+    completedSteps,
+    loadingStates,
+    
+    // Results
+    orgId,
+    approverId,
+    approversList,
+    selectedApproverIndex,
+
+    // Actions
+    addLog,
+    markStepComplete,
+    setOrgId,
+    setApproverId,
+    setApproversList,
+    setSelectedApproverIndex,
+    setStepLoading
+  } = useNonCustodialContext();
+
+  const isCompleted = completedSteps[stepNumber - 1];
+  const isLoading = loadingStates[stepNumber - 1];
+
   const handleCreateOrg = async () => {
     let payload;
     if (orgType === 'nonCustodialIndividual') {
@@ -97,7 +76,7 @@ export const CreateOrganizationStep: React.FC<CreateOrganizationStepProps> = ({
       payload = { type: 'nonCustodialBusiness', businessName, email: businessEmail, approvers: approversArray };
     }
     
-    setLoading(true);
+    setStepLoading(stepNumber - 1, true);
     addLog(`🔄 Step 1: Creating ${orgType} organization...`);
     
     try {
@@ -153,12 +132,12 @@ export const CreateOrganizationStep: React.FC<CreateOrganizationStepProps> = ({
         }
       }
       
-      markStepComplete(0);
+      markStepComplete(stepNumber - 1);
       addLog(`➡️ Next: Get Terms of Service link`, 'info');
     } catch (error) {
       addLog(`❌ Failed to create organization: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
-      setLoading(false);
+      setStepLoading(stepNumber - 1, false);
     }
   };
 

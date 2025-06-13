@@ -1,63 +1,56 @@
 import React from 'react';
-import { Step, Button, ResultDisplay } from '../ui';
-import { NonCustodialSDKWrapper } from '../../index';
+import { Step, Button, InfoBox, ResultDisplay } from '../ui';
+import { useNonCustodialContext } from '../../context/NonCustodialContext';
 
-export interface SignPayoutStepProps {
+interface SignPayoutStepProps {
   stepNumber: number;
-  currentStep: number;
-  isCompleted: boolean;
-  isLoading: boolean;
-  signature: string;
-  wrapper: NonCustodialSDKWrapper | null;
-  payoutPayload: string;
-  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
-  setSignature: (signature: string) => void;
-  markStepComplete: (stepIndex: number) => void;
-  setLoading: (loading: boolean) => void;
 }
 
 export const SignPayoutStep: React.FC<SignPayoutStepProps> = ({
-  stepNumber,
-  currentStep,
-  isCompleted,
-  isLoading,
-  signature,
-  wrapper,
-  payoutPayload,
-  addLog,
-  setSignature,
-  markStepComplete,
-  setLoading
+  stepNumber
 }) => {
+  const {
+    currentStep,
+    completedSteps,
+    loadingStates,
+    signature,
+    payoutPayload,
+    wrapper,
+    addLog,
+    markStepComplete,
+    setSignature,
+    setStepLoading
+  } = useNonCustodialContext();
+
+  const isCompleted = completedSteps[stepNumber - 1];
+  const isLoading = loadingStates[stepNumber - 1];
   const isActive = currentStep === stepNumber;
 
   const handleSignPayout = async () => {
-    if (!wrapper || !payoutPayload) {
-      addLog('❌ Please get the payout body first', 'error');
+    if (!payoutPayload || !wrapper) {
+      addLog('❌ Please complete previous steps first', 'error');
       return;
     }
     
-    setLoading(true);
+    setStepLoading(stepNumber - 1, true);
+    addLog('🔄 Step 13: Signing payout with SDK...');
     
     try {
-      const payload = JSON.parse(payoutPayload);
-      addLog('🔄 Step 13: Signing payout payload...');
-      const sig = await wrapper.signPayoutPayload(payload);
-      if (sig) {
-        addLog(`✅ Payout signed successfully!`, 'success');
-        addLog(`✍️ Signature: ${sig}`, 'success');
-        setSignature(sig);
-        markStepComplete(12);
-        addLog(`➡️ Next: Execute the payout`, 'info');
+      const parsedPayload = JSON.parse(payoutPayload);
+      const signedPayload = await wrapper.signPayoutPayload(parsedPayload);
+      
+      if (signedPayload === null) {
+        throw new Error('Failed to sign payload - signature returned null');
       }
+      
+      setSignature(signedPayload);
+      addLog(`✅ Payout signed successfully!`, 'success');
+      markStepComplete(stepNumber - 1);
+      addLog(`➡️ Next: Execute the payout`, 'info');
     } catch (error) {
-      if (error instanceof Error && error.message.includes('JSON')) {
-        addLog('❌ Invalid JSON in payout payload', 'error');
-      } else {
-        addLog(`❌ Signing failed: ${error instanceof Error ? error.message : String(error)}`, 'error');
-      }
+      addLog(`❌ Failed to sign payout: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
-      setLoading(false);
+      setStepLoading(stepNumber - 1, false);
     }
   };
 

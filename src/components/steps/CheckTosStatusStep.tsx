@@ -1,34 +1,31 @@
 import React from 'react';
 import { Step, Button, InfoBox, ResultDisplay } from '../ui';
 import { MuralApiClient } from '../../index';
+import { useNonCustodialContext } from '../../context/NonCustodialContext';
 
-export interface CheckTosStatusStepProps {
+interface CheckTosStatusStepProps {
   stepNumber: number;
-  currentStep: number;
-  isCompleted: boolean;
-  isLoading: boolean;
-  tosStatus: string;
-  tosResponse: any;
-  orgId: string;
-  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
-  markStepComplete: (stepIndex: number) => void;
-  onTosStatusChange: (status: string, response: any) => void;
-  setLoading: (loading: boolean) => void;
 }
 
 export const CheckTosStatusStep: React.FC<CheckTosStatusStepProps> = ({
-  stepNumber,
-  currentStep,
-  isCompleted,
-  isLoading,
-  tosStatus,
-  tosResponse,
-  orgId,
-  addLog,
-  markStepComplete,
-  onTosStatusChange,
-  setLoading
+  stepNumber
 }) => {
+  const {
+    currentStep,
+    completedSteps,
+    loadingStates,
+    tosStatus,
+    tosResponse,
+    orgId,
+    addLog,
+    markStepComplete,
+    onTosStatusChange,
+    setStepLoading
+  } = useNonCustodialContext();
+
+  const isCompleted = completedSteps[stepNumber - 1];
+  const isLoading = loadingStates[stepNumber - 1];
+
   const isActive = currentStep === stepNumber;
 
   const handleCheckTosStatus = async () => {
@@ -37,7 +34,7 @@ export const CheckTosStatusStep: React.FC<CheckTosStatusStepProps> = ({
       return;
     }
     
-    setLoading(true);
+    setStepLoading(stepNumber - 1, true);
     addLog('🔄 Step 3: Checking Terms of Service acceptance status...');
     
     try {
@@ -49,7 +46,7 @@ export const CheckTosStatusStep: React.FC<CheckTosStatusStepProps> = ({
       
       if (tosStatusValue === 'ACCEPTED') {
         addLog(`✅ Terms of Service have been accepted!`, 'success');
-        markStepComplete(2);
+        markStepComplete(stepNumber - 1);
         addLog(`➡️ Next: Initialize the SDK`, 'info');
       } else if (tosStatusValue === 'NEEDS_REVIEW') {
         addLog(`⚠️ Terms of Service are pending review. Please wait for approval.`, 'warning');
@@ -60,7 +57,7 @@ export const CheckTosStatusStep: React.FC<CheckTosStatusStepProps> = ({
     } catch (error) {
       addLog(`❌ Failed to check TOS status: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
-      setLoading(false);
+      setStepLoading(stepNumber - 1, false);
     }
   };
 

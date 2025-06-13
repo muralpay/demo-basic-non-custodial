@@ -1,34 +1,30 @@
 import React from 'react';
 import { Step, Button, InfoBox, ResultDisplay } from '../ui';
 import { MuralApiClient } from '../../index';
+import { useNonCustodialContext } from '../../context/NonCustodialContext';
 
-export interface CheckKycStatusStepProps {
+interface CheckKycStatusStepProps {
   stepNumber: number;
-  currentStep: number;
-  isCompleted: boolean;
-  isLoading: boolean;
-  kycStatus: string;
-  kycResponse: any;
-  orgId: string;
-  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
-  markStepComplete: (stepIndex: number) => void;
-  onKycStatusChange: (status: string, response: any) => void;
-  setLoading: (loading: boolean) => void;
 }
 
 export const CheckKycStatusStep: React.FC<CheckKycStatusStepProps> = ({
-  stepNumber,
-  currentStep,
-  isCompleted,
-  isLoading,
-  kycStatus,
-  kycResponse,
-  orgId,
-  addLog,
-  markStepComplete,
-  onKycStatusChange,
-  setLoading
+  stepNumber
 }) => {
+  const {
+    currentStep,
+    completedSteps,
+    loadingStates,
+    kycStatus,
+    kycResponse,
+    orgId,
+    addLog,
+    markStepComplete,
+    onKycStatusChange,
+    setStepLoading
+  } = useNonCustodialContext();
+
+  const isCompleted = completedSteps[stepNumber - 1];
+  const isLoading = loadingStates[stepNumber - 1];
   const isActive = currentStep === stepNumber;
 
   const handleCheckKycStatus = async () => {
@@ -37,7 +33,7 @@ export const CheckKycStatusStep: React.FC<CheckKycStatusStepProps> = ({
       return;
     }
     
-    setLoading(true);
+    setStepLoading(stepNumber - 1, true);
     addLog('🔄 Step 8: Checking KYC verification status...');
     
     try {
@@ -49,7 +45,7 @@ export const CheckKycStatusStep: React.FC<CheckKycStatusStepProps> = ({
       
       if (kycStatusValue === 'approved') {
         addLog(`✅ KYC verification has been approved!`, 'success');
-        markStepComplete(7);
+        markStepComplete(stepNumber - 1);
         addLog(`➡️ Next: Create account`, 'info');
       } else if (kycStatusValue === 'pending') {
         addLog(`⚠️ KYC verification is pending review. Please wait for approval.`, 'warning');
@@ -62,7 +58,7 @@ export const CheckKycStatusStep: React.FC<CheckKycStatusStepProps> = ({
     } catch (error) {
       addLog(`❌ Failed to check KYC status: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
-      setLoading(false);
+      setStepLoading(stepNumber - 1, false);
     }
   };
 

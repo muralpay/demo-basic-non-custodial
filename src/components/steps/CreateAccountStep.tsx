@@ -1,46 +1,38 @@
 import React from "react";
 import { Step, Button, FormInput, InfoBox, ResultDisplay } from "../ui";
 import { MuralApiClient } from '../../index';
+import { useNonCustodialContext } from '../../context/NonCustodialContext';
 
-export interface CreateAccountStepProps {
+interface CreateAccountStepProps {
   stepNumber: number;
-  currentStep: number;
-  isCompleted: boolean;
-  isLoading: boolean;
-  accountName: string;
-  setAccountName: (value: string) => void;
-  accountId: string;
-  accountAddress: string;
-  accountInitializing: boolean;
-  orgId: string;
-  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
-  markStepComplete: (stepIndex: number) => void;
-  setAccountId: (id: string) => void;
-  setAccountAddress: (address: string) => void;
-  setLoading: (loading: boolean) => void;
-  isLoadingAccountDetails?: boolean;
-  setLoadingAccountDetails?: (loading: boolean) => void;
 }
 
 export const CreateAccountStep: React.FC<CreateAccountStepProps> = ({
-  stepNumber,
-  currentStep,
-  isCompleted,
-  isLoading,
-  accountName,
-  setAccountName,
-  accountId,
-  accountAddress,
-  accountInitializing,
-  orgId,
-  addLog,
-  markStepComplete,
-  setAccountId,
-  setAccountAddress,
-  setLoading,
-  isLoadingAccountDetails = false,
-  setLoadingAccountDetails,
+  stepNumber
 }) => {
+  const {
+    currentStep,
+    completedSteps,
+    loadingStates,
+    accountName,
+    accountId,
+    accountAddress,
+    accountInitializing,
+    isLoadingAccountDetails,
+    orgId,
+    wrapper,
+    addLog,
+    markStepComplete,
+    setAccountName,
+    setAccountId,
+    setAccountAddress,
+    setAccountInitializing,
+    setIsLoadingAccountDetails,
+    setStepLoading
+  } = useNonCustodialContext();
+
+  const isCompleted = completedSteps[stepNumber - 1];
+  const isLoading = loadingStates[stepNumber - 1];
   const isActive = currentStep === stepNumber;
 
   const handleCreateAccount = async () => {
@@ -49,7 +41,7 @@ export const CreateAccountStep: React.FC<CreateAccountStepProps> = ({
       return;
     }
     
-    setLoading(true);
+    setStepLoading(stepNumber - 1, true);
     addLog('🔄 Step 9: Creating account...');
     
     try {
@@ -62,11 +54,21 @@ export const CreateAccountStep: React.FC<CreateAccountStepProps> = ({
       addLog(`📋 Account ID: ${result.id}`, 'success');
       setAccountId(result.id);
       
-      // Log the full response to debug the structure
-      console.log('Full account creation response:', result);
-      addLog(`🔍 Full response: ${JSON.stringify(result, null, 2)}`, 'info');
+      // Check account status
+      const accountStatus = result.status;
+      addLog(`📋 Account Status: ${accountStatus}`, 'info');
       
-      // Extract account address from nested structure
+      if (accountStatus === 'INITIALIZING') {
+        setAccountInitializing(true);
+        addLog(`⏳ Account is initializing. This typically takes around 3 minutes.`, 'warning');
+        addLog(`💡 Click "Check Initialization Status" button to check when it's ready.`, 'info');
+        // Mark step as complete since account was created, even if initializing
+        markStepComplete(stepNumber - 1);
+        addLog(`➡️ Next: Wait for account initialization, then fund your account`, 'info');
+        return; // Don't try to extract wallet address yet
+      }
+      
+      // Try to extract account address if account is ready
       let walletAddress = null;
       
       // Try different possible paths for the wallet address
@@ -82,21 +84,22 @@ export const CreateAccountStep: React.FC<CreateAccountStepProps> = ({
       
       if (walletAddress) {
         setAccountAddress(walletAddress);
+        setAccountInitializing(false);
         addLog(`📋 Account Address: ${walletAddress}`, 'success');
-        markStepComplete(8);
+        markStepComplete(stepNumber - 1);
         addLog(`➡️ Next: Fund your account using Circle faucet`, 'info');
       } else {
         addLog(`⚠️ Account created but wallet address not found in response`, 'warning');
-        addLog(`💡 The account may still be initializing. You can check the account status or try getting account details.`, 'warning');
-        // Still mark as complete since account was created successfully
-        markStepComplete(8);
-        addLog(`➡️ Next: Get account details to retrieve wallet address`, 'info');
+        setAccountInitializing(true);
+        addLog(`💡 The account may still be initializing. You can check the account status.`, 'warning');
+        markStepComplete(stepNumber - 1);
+        addLog(`➡️ Next: Check account details to retrieve wallet address`, 'info');
       }
       
     } catch (error) {
       addLog(`❌ Failed to create account: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
-      setLoading(false);
+      setStepLoading(stepNumber - 1, false);
     }
   };
 
@@ -106,18 +109,26 @@ export const CreateAccountStep: React.FC<CreateAccountStepProps> = ({
       return;
     }
     
-    if (setLoadingAccountDetails) {
-      setLoadingAccountDetails(true);
+    if (setIsLoadingAccountDetails) {
+      setIsLoadingAccountDetails(true);
     }
-    addLog('🔄 Getting account details to retrieve wallet address...');
+    addLog('🔄 Getting account details to check initialization status...');
     
     try {
       const apiClient = new MuralApiClient();
       const result = await apiClient.getAccount(accountId, orgId);
-      console.log('Account details response:', result);
-      addLog(`🔍 Account details: ${JSON.stringify(result, null, 2)}`, 'info');
       
-      // Extract wallet address from account details
+      const accountStatus = result.status;
+      addLog(`📋 Account Status: ${accountStatus}`, 'info');
+      
+      if (accountStatus === 'INITIALIZING') {
+        setAccountInitializing(true);
+        addLog(`⏳ Account is still initializing. Please wait a bit longer.`, 'warning');
+        addLog(`💡 Initialization typically takes around 3 minutes total.`, 'info');
+        return;
+      }
+      
+      // If account is ready, try to extract wallet address
       let walletAddress = null;
       
       if (result.accountDetails?.walletDetails?.walletAddress) {
@@ -132,18 +143,20 @@ export const CreateAccountStep: React.FC<CreateAccountStepProps> = ({
       
       if (walletAddress) {
         setAccountAddress(walletAddress);
-        addLog(`✅ Wallet address retrieved: ${walletAddress}`, 'success');
+        setAccountInitializing(false);
+        addLog(`✅ Account initialized successfully!`, 'success');
+        addLog(`📋 Wallet Address: ${walletAddress}`, 'success');
         addLog(`➡️ Next: Fund your account using Circle faucet`, 'info');
       } else {
-        addLog(`⚠️ Wallet address still not available. Account may still be initializing.`, 'warning');
-        addLog(`💡 Account status: ${result.status || 'Unknown'}`, 'info');
+        addLog(`⚠️ Account status is ${accountStatus} but wallet address not found.`, 'warning');
+        addLog(`💡 Please try again in a few moments.`, 'info');
       }
       
     } catch (error) {
       addLog(`❌ Failed to get account details: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
-      if (setLoadingAccountDetails) {
-        setLoadingAccountDetails(false);
+      if (setIsLoadingAccountDetails) {
+        setIsLoadingAccountDetails(false);
       }
     }
   };
@@ -208,7 +221,7 @@ export const CreateAccountStep: React.FC<CreateAccountStepProps> = ({
       {accountId && (
         <ResultDisplay>
           <strong>Account ID:</strong> {accountId}
-          {accountInitializing && !accountAddress && (
+          {accountInitializing && (
             <InfoBox variant="warning">
               <p style={{ marginBottom: 0, fontSize: "14px" }}>
                 ⏳ <strong>Account Initializing:</strong> The account is being
@@ -218,7 +231,7 @@ export const CreateAccountStep: React.FC<CreateAccountStepProps> = ({
               </p>
             </InfoBox>
           )}
-          {accountAddress && (
+          {accountAddress && !accountInitializing && (
             <>
               <br />
               <strong>Account Address:</strong> {accountAddress}

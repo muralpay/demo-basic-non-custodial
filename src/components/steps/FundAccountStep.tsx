@@ -1,27 +1,27 @@
 import React from 'react';
 import { Step, Button, FormInput, InfoBox, ResultDisplay } from '../ui';
+import { useNonCustodialContext } from '../../context/NonCustodialContext';
 
-export interface FundAccountStepProps {
+interface FundAccountStepProps {
   stepNumber: number;
-  currentStep: number;
-  isCompleted: boolean;
-  isLoading: boolean;
-  accountAddress: string;
-  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
-  markStepComplete: (stepIndex: number) => void;
-  setLoading: (loading: boolean) => void;
 }
 
 export const FundAccountStep: React.FC<FundAccountStepProps> = ({
-  stepNumber,
-  currentStep,
-  isCompleted,
-  isLoading,
-  accountAddress,
-  addLog,
-  markStepComplete,
-  setLoading
+  stepNumber
 }) => {
+  const {
+    currentStep,
+    completedSteps,
+    loadingStates,
+    accountAddress,
+    addLog,
+    markStepComplete,
+    setStepLoading
+  } = useNonCustodialContext();
+
+  const isCompleted = completedSteps[stepNumber - 1];
+  const isLoading = loadingStates[stepNumber - 1];
+
   const isActive = currentStep === stepNumber;
 
   const handleProceedToFunding = async () => {
@@ -30,12 +30,12 @@ export const FundAccountStep: React.FC<FundAccountStepProps> = ({
       return;
     }
     
-    setLoading(true);
+    setStepLoading(stepNumber - 1, true);
     addLog('ℹ️ Step 10: Please follow the funding instructions above', 'info');
     addLog('💰 Once you have funded your account with USDC, click "Continue to Payout"', 'warning');
-    markStepComplete(9);
+    markStepComplete(stepNumber - 1);
     addLog(`➡️ Next: Create a payout`, 'info');
-    setLoading(false);
+    setStepLoading(stepNumber - 1, false);
   };
 
   const actions = (

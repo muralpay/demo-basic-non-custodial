@@ -1,34 +1,30 @@
 import React from 'react';
-import { Step, Button, FormInput } from '../ui';
-import { NonCustodialSDKWrapper } from '../../index';
+import { Step, Button, FormInput, InfoBox } from '../ui';
+import { useNonCustodialContext } from '../../context/NonCustodialContext';
 
-export interface StartSessionStepProps {
+interface StartSessionStepProps {
   stepNumber: number;
-  currentStep: number;
-  isCompleted: boolean;
-  isLoading: boolean;
-  emailCode: string;
-  setEmailCode: (value: string) => void;
-  wrapper: NonCustodialSDKWrapper | null;
-  authenticatorId: string;
-  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
-  markStepComplete: (stepIndex: number) => void;
-  setLoading: (loading: boolean) => void;
 }
 
 export const StartSessionStep: React.FC<StartSessionStepProps> = ({
-  stepNumber,
-  currentStep,
-  isCompleted,
-  isLoading,
-  emailCode,
-  setEmailCode,
-  wrapper,
-  authenticatorId,
-  addLog,
-  markStepComplete,
-  setLoading
+  stepNumber
 }) => {
+  const {
+    currentStep,
+    completedSteps,
+    loadingStates,
+    emailCode,
+    authenticatorId,
+    wrapper,
+    addLog,
+    markStepComplete,
+    setEmailCode,
+    setStepLoading
+  } = useNonCustodialContext();
+
+  const isCompleted = completedSteps[stepNumber - 1];
+  const isLoading = loadingStates[stepNumber - 1];
+
   const isActive = currentStep === stepNumber;
   const canSubmit = isActive && emailCode.trim() !== '';
 
@@ -38,7 +34,7 @@ export const StartSessionStep: React.FC<StartSessionStepProps> = ({
       return;
     }
     
-    setLoading(true);
+    setStepLoading(stepNumber - 1, true);
     addLog('🔄 Step 6: Starting session with verification code...');
     
     try {
@@ -47,12 +43,12 @@ export const StartSessionStep: React.FC<StartSessionStepProps> = ({
         authenticatorId: authenticatorId
       });
       addLog(`✅ Session started successfully!`, 'success');
-      markStepComplete(5);
+      markStepComplete(stepNumber - 1);
       addLog(`➡️ Next: Get KYC link`, 'info');
     } catch (error) {
       addLog(`❌ Failed to start session: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
-      setLoading(false);
+      setStepLoading(stepNumber - 1, false);
     }
   };
 

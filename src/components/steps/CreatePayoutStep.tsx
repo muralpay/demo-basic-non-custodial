@@ -1,39 +1,41 @@
 import React from 'react';
 import { Step, Button, InfoBox, ResultDisplay } from '../ui';
 import { MuralApiClient } from '../../index';
+import { useNonCustodialContext } from '../../context/NonCustodialContext';
 
-export interface CreatePayoutStepProps {
+interface CreatePayoutStepProps {
   stepNumber: number;
-  currentStep: number;
-  isCompleted: boolean;
-  isLoading: boolean;
-  payoutId: string;
-  orgId: string;
-  accountId: string;
-  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
-  setPayoutId: (id: string) => void;
-  markStepComplete: (stepIndex: number) => void;
-  setLoading: (loading: boolean) => void;
 }
 
 export const CreatePayoutStep: React.FC<CreatePayoutStepProps> = ({
-  stepNumber,
-  currentStep,
-  isCompleted,
-  isLoading,
-  payoutId,
-  orgId,
-  accountId,
-  addLog,
-  setPayoutId,
-  markStepComplete,
-  setLoading
+  stepNumber
 }) => {
+  const {
+    currentStep,
+    completedSteps,
+    loadingStates,
+    payoutId,
+    accountId,
+    orgId,
+    addLog,
+    markStepComplete,
+    setPayoutId,
+    setStepLoading
+  } = useNonCustodialContext();
+
+  const isCompleted = completedSteps[stepNumber - 1];
+  const isLoading = loadingStates[stepNumber - 1];
+
   const isActive = currentStep === stepNumber;
 
   const handleCreatePayout = async () => {
-    if (!orgId || !accountId) {
+    if (!accountId) {
       addLog('❌ Please create account first', 'error');
+      return;
+    }
+    
+    if (!orgId) {
+      addLog('❌ Organization ID not found. Please create organization first', 'error');
       return;
     }
     
@@ -76,7 +78,7 @@ export const CreatePayoutStep: React.FC<CreatePayoutStepProps> = ({
       ]
     };
     
-    setLoading(true);
+    setStepLoading(stepNumber - 1, true);
     addLog('🔄 Step 11: Creating $2 USDC payout request...');
     addLog(`💰 Amount: $2 USDC`, 'info');
     addLog(`👤 Recipient: John Smith`, 'info');
@@ -88,12 +90,12 @@ export const CreatePayoutStep: React.FC<CreatePayoutStepProps> = ({
       addLog(`✅ Payout created successfully!`, 'success');
       addLog(`📋 Payout ID: ${result.id}`, 'success');
       setPayoutId(result.id);
-      markStepComplete(10);
+      markStepComplete(stepNumber - 1);
       addLog(`➡️ Next: Get payout body to sign`, 'info');
     } catch (error) {
       addLog(`❌ Failed to create payout: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
-      setLoading(false);
+      setStepLoading(stepNumber - 1, false);
     }
   };
 

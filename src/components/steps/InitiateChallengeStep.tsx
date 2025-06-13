@@ -1,40 +1,35 @@
 import React from 'react';
-import { Step, Button, InfoBox, ResultDisplay } from '../ui';
+import { Step, Button, InfoBox, ResultDisplay, FormInput } from '../ui';
+import { useNonCustodialContext } from '../../context/NonCustodialContext';
 import { MuralApiClient, NonCustodialSDKWrapper } from '../../index';
 
-export interface InitiateChallengeStepProps {
+interface InitiateChallengeStepProps {
   stepNumber: number;
-  currentStep: number;
-  isCompleted: boolean;
-  isLoading: boolean;
-  approversList: Array<{id: string, name: string, email: string}>;
-  selectedApproverIndex: number;
-  authenticatorId: string;
-  orgId: string;
-  approverId: string;
-  wrapper: NonCustodialSDKWrapper | null;
-  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
-  setAuthenticatorId: (id: string) => void;
-  markStepComplete: (stepIndex: number) => void;
-  setLoading: (loading: boolean) => void;
 }
 
 export const InitiateChallengeStep: React.FC<InitiateChallengeStepProps> = ({
-  stepNumber,
-  currentStep,
-  isCompleted,
-  isLoading,
-  approversList,
-  selectedApproverIndex,
-  authenticatorId,
-  orgId,
-  approverId,
-  wrapper,
-  addLog,
-  setAuthenticatorId,
-  markStepComplete,
-  setLoading
+  stepNumber
 }) => {
+  const {
+    currentStep,
+    completedSteps,
+    loadingStates,
+    approversList,
+    selectedApproverIndex,
+    authenticatorId,
+    orgId,
+    approverId,
+    wrapper,
+    addLog,
+    markStepComplete,
+    setAuthenticatorId,
+    setSelectedApproverIndex,
+    setStepLoading
+  } = useNonCustodialContext();
+
+  const isCompleted = completedSteps[stepNumber - 1];
+  const isLoading = loadingStates[stepNumber - 1];
+
   const isActive = currentStep === stepNumber;
 
   const handleInitiateChallenge = async () => {
@@ -42,14 +37,15 @@ export const InitiateChallengeStep: React.FC<InitiateChallengeStepProps> = ({
       addLog('❌ Please complete previous steps first', 'error');
       return;
     }
-    
+
+    // Get public key from the SDK
     const publicKey = wrapper.getPublicKey();
     if (!publicKey) {
-      addLog('❌ Failed to get public key', 'error');
+      addLog('❌ Failed to get public key from SDK', 'error');
       return;
     }
     
-    setLoading(true);
+    setStepLoading(stepNumber - 1, true);
     addLog('🔄 Step 5: Initiating authentication challenge...');
     addLog(`🔑 Using Public Key: ${publicKey}`, 'info');
     addLog(`📋 Using Approver ID: ${approverId}`, 'info');
@@ -60,13 +56,12 @@ export const InitiateChallengeStep: React.FC<InitiateChallengeStepProps> = ({
       addLog(`✅ Challenge initiated successfully!`, 'success');
       addLog(`📋 Authenticator ID: ${result.authenticatorId}`, 'success');
       setAuthenticatorId(result.authenticatorId);
-      markStepComplete(4);
-      addLog(`📧 Check your email for the verification code`, 'warning');
-      addLog(`➡️ Next: Enter the email code and start session`, 'info');
+      markStepComplete(stepNumber - 1);
+      addLog(`➡️ Next: Start session with email code`, 'info');
     } catch (error) {
       addLog(`❌ Failed to initiate challenge: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
-      setLoading(false);
+      setStepLoading(stepNumber - 1, false);
     }
   };
 

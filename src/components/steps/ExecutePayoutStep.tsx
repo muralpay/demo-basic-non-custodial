@@ -1,59 +1,54 @@
 import React from 'react';
 import { Step, Button, InfoBox, ResultDisplay } from '../ui';
 import { MuralApiClient } from '../../index';
+import { useNonCustodialContext } from '../../context/NonCustodialContext';
 
-export interface ExecutePayoutStepProps {
+interface ExecutePayoutStepProps {
   stepNumber: number;
-  currentStep: number;
-  isCompleted: boolean;
-  isLoading: boolean;
-  payoutStatus: string;
-  orgId: string;
-  payoutId: string;
-  signature: string;
-  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
-  setPayoutStatus: (status: string) => void;
-  markStepComplete: (stepIndex: number) => void;
-  setLoading: (loading: boolean) => void;
 }
 
 export const ExecutePayoutStep: React.FC<ExecutePayoutStepProps> = ({
-  stepNumber,
-  currentStep,
-  isCompleted,
-  isLoading,
-  payoutStatus,
-  orgId,
-  payoutId,
-  signature,
-  addLog,
-  setPayoutStatus,
-  markStepComplete,
-  setLoading
+  stepNumber
 }) => {
+  const {
+    currentStep,
+    completedSteps,
+    loadingStates,
+    payoutStatus,
+    signature,
+    payoutId,
+    orgId,
+    addLog,
+    markStepComplete,
+    setPayoutStatus,
+    setStepLoading
+  } = useNonCustodialContext();
+
+  const isCompleted = completedSteps[stepNumber - 1];
+  const isLoading = loadingStates[stepNumber - 1];
   const isActive = currentStep === stepNumber;
 
   const handleExecutePayout = async () => {
-    if (!orgId || !payoutId || !signature) {
-      addLog('❌ Please complete all previous steps first', 'error');
+    if (!signature || !payoutId || !orgId) {
+      addLog('❌ Please complete previous steps first', 'error');
       return;
     }
     
-    setLoading(true);
+    setStepLoading(stepNumber - 1, true);
     addLog('🔄 Step 14: Executing payout...');
     
     try {
       const apiClient = new MuralApiClient();
       const result = await apiClient.executeNonCustodialPayout(payoutId, signature, orgId);
+      setPayoutStatus('SUCCESS');
       addLog(`✅ Payout executed successfully!`, 'success');
-      addLog(`📋 Payout status: ${result.status}`, 'success');
-      setPayoutStatus(result.status);
-      markStepComplete(13);
-      addLog(`🎉 Non-custodial flow completed successfully!`, 'success');
+      addLog(`💸 Status: SUCCESS`, 'success');
+      markStepComplete(stepNumber - 1);
+      addLog(`🎉 Congratulations! You have completed the entire non-custodial payout flow!`, 'success');
     } catch (error) {
       addLog(`❌ Failed to execute payout: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
-      setLoading(false);
+      setStepLoading(stepNumber - 1, false);
     }
   };
 
@@ -67,12 +62,6 @@ export const ExecutePayoutStep: React.FC<ExecutePayoutStepProps> = ({
       {isCompleted ? '✅ Payout Executed' : 'Execute Payout'}
     </Button>
   );
-
-  const getStatusVariant = () => {
-    if (payoutStatus === 'completed' || payoutStatus === 'success') return 'success';
-    if (payoutStatus === 'pending' || payoutStatus === 'processing') return 'warning';
-    return 'error';
-  };
 
   return (
     <Step
@@ -98,14 +87,6 @@ export const ExecutePayoutStep: React.FC<ExecutePayoutStepProps> = ({
             The payout is now being processed and will be delivered to John Smith's bank account.
           </p>
         </InfoBox>
-      )}
-      
-      {payoutStatus && (
-        <ResultDisplay>
-          <InfoBox variant={getStatusVariant()}>
-            <strong>Payout Status:</strong> {payoutStatus.toUpperCase()}
-          </InfoBox>
-        </ResultDisplay>
       )}
     </Step>
   );

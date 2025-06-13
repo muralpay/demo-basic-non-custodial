@@ -1,36 +1,31 @@
 import React from 'react';
 import { Step, Button, FormInput, InfoBox, ResultDisplay } from '../ui';
 import { MuralApiClient } from '../../index';
+import { useNonCustodialContext } from '../../context/NonCustodialContext';
 
-export interface KycLinkStepProps {
+interface KycLinkStepProps {
   stepNumber: number;
-  currentStep: number;
-  isCompleted: boolean;
-  isLoading: boolean;
-  kycLink: string;
-  kycLinkVisible: boolean;
-  orgId: string;
-  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
-  markStepComplete: (stepIndex: number) => void;
-  setKycLink: (link: string) => void;
-  setKycLinkVisible: (visible: boolean) => void;
-  setLoading: (loading: boolean) => void;
 }
 
 export const KycLinkStep: React.FC<KycLinkStepProps> = ({
-  stepNumber,
-  currentStep,
-  isCompleted,
-  isLoading,
-  kycLink,
-  kycLinkVisible,
-  orgId,
-  addLog,
-  markStepComplete,
-  setKycLink,
-  setKycLinkVisible,
-  setLoading
+  stepNumber
 }) => {
+  const {
+    currentStep,
+    completedSteps,
+    loadingStates,
+    kycLink,
+    kycLinkVisible,
+    orgId,
+    addLog,
+    markStepComplete,
+    setKycLink,
+    setKycLinkVisible,
+    setStepLoading
+  } = useNonCustodialContext();
+
+  const isCompleted = completedSteps[stepNumber - 1];
+  const isLoading = loadingStates[stepNumber - 1];
   const isActive = currentStep === stepNumber;
 
   const handleGetKycLink = async () => {
@@ -38,8 +33,8 @@ export const KycLinkStep: React.FC<KycLinkStepProps> = ({
       addLog('❌ Please complete previous steps first', 'error');
       return;
     }
-    
-    setLoading(true);
+  
+    setStepLoading(stepNumber - 1, true);
     addLog('🔄 Step 7: Getting KYC link...');
     
     try {
@@ -48,13 +43,13 @@ export const KycLinkStep: React.FC<KycLinkStepProps> = ({
       addLog(`✅ KYC link retrieved successfully!`, 'success');
       setKycLink(link);
       setKycLinkVisible(true);
-      markStepComplete(6);
+      markStepComplete(stepNumber - 1);
       addLog(`🔗 Please open the KYC link and complete the verification process`, 'warning');
-      addLog(`➡️ Next: Check KYC status, then create account`, 'info');
+      addLog(`➡️ Next: Check KYC status`, 'info');
     } catch (error) {
       addLog(`❌ Failed to get KYC link: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
-      setLoading(false);
+      setStepLoading(stepNumber - 1, false);
     }
   };
 

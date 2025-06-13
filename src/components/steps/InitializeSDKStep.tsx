@@ -1,34 +1,32 @@
 import React from 'react';
-import { Step, Button } from '../ui';
+import { Step, Button, InfoBox, ResultDisplay } from '../ui';
 import { NonCustodialSDKWrapper } from '../../index';
+import { useNonCustodialContext } from '../../context/NonCustodialContext';
 
-export interface InitializeSDKStepProps {
+interface InitializeSDKStepProps {
   stepNumber: number;
-  currentStep: number;
-  isCompleted: boolean;
-  isLoading: boolean;
-  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
-  setWrapper: (wrapper: NonCustodialSDKWrapper | null) => void;
-  markStepComplete: (stepIndex: number) => void;
-  updateStatus: (message: string, type?: 'ready' | 'error' | 'warning') => void;
-  setLoading: (loading: boolean) => void;
 }
 
 export const InitializeSDKStep: React.FC<InitializeSDKStepProps> = ({
-  stepNumber,
-  currentStep,
-  isCompleted,
-  isLoading,
-  addLog,
-  setWrapper,
-  markStepComplete,
-  updateStatus,
-  setLoading
+  stepNumber
 }) => {
+  const {
+    currentStep,
+    completedSteps,
+    loadingStates,
+    addLog,
+    markStepComplete,
+    setWrapper,
+    setStepLoading
+  } = useNonCustodialContext();
+
+  const isCompleted = completedSteps[stepNumber - 1];
+  const isLoading = loadingStates[stepNumber - 1];
+
   const isActive = currentStep === stepNumber;
 
   const handleInitializeSDK = async () => {
-    setLoading(true);
+    setStepLoading(stepNumber - 1, true);
     addLog('🔄 Step 4: Initializing SDK...');
     
     try {
@@ -37,17 +35,15 @@ export const InitializeSDKStep: React.FC<InitializeSDKStepProps> = ({
       if (success) {
         setWrapper(newWrapper);
         addLog('✅ SDK initialized successfully!', 'success');
-        markStepComplete(3);
+        markStepComplete(stepNumber - 1);
         addLog(`➡️ Next: Get public key and initiate challenge`, 'info');
-        updateStatus('SDK Initialized');
       } else {
         throw new Error('SDK initialization failed');
       }
     } catch (error) {
       addLog(`❌ Error: ${error instanceof Error ? error.message : String(error)}`, 'error');
-      updateStatus('Error', 'error');
     } finally {
-      setLoading(false);
+      setStepLoading(stepNumber - 1, false);
     }
   };
 

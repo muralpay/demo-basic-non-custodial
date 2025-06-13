@@ -1,56 +1,52 @@
 import React from 'react';
-import { Step, Button, FormInput, ResultDisplay } from '../ui';
+import { Step, Button, InfoBox, ResultDisplay, FormInput } from '../ui';
 import { MuralApiClient } from '../../index';
+import { useNonCustodialContext } from '../../context/NonCustodialContext';
 
-export interface GetPayoutBodyStepProps {
+interface GetPayoutBodyStepProps {
   stepNumber: number;
-  currentStep: number;
-  isCompleted: boolean;
-  isLoading: boolean;
-  payoutPayload: string;
-  orgId: string;
-  payoutId: string;
-  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
-  setPayoutPayload: (payload: string) => void;
-  markStepComplete: (stepIndex: number) => void;
-  setLoading: (loading: boolean) => void;
 }
 
 export const GetPayoutBodyStep: React.FC<GetPayoutBodyStepProps> = ({
-  stepNumber,
-  currentStep,
-  isCompleted,
-  isLoading,
-  payoutPayload,
-  orgId,
-  payoutId,
-  addLog,
-  setPayoutPayload,
-  markStepComplete,
-  setLoading
+  stepNumber
 }) => {
+  const {
+    currentStep,
+    completedSteps,
+    loadingStates,
+    payoutPayload,
+    payoutId,
+    orgId,
+    addLog,
+    markStepComplete,
+    setPayoutPayload,
+    setStepLoading
+  } = useNonCustodialContext();
+
+  const isCompleted = completedSteps[stepNumber - 1];
+  const isLoading = loadingStates[stepNumber - 1];
   const isActive = currentStep === stepNumber;
 
   const handleGetPayoutBody = async () => {
-    if (!orgId || !payoutId) {
+    if (!payoutId || !orgId) {
       addLog('❌ Please create a payout first', 'error');
       return;
     }
     
-    setLoading(true);
-    addLog('🔄 Step 12: Getting payout body to sign...');
+    setStepLoading(stepNumber - 1, true);
+    addLog('🔄 Step 12: Getting payout body for signing...');
     
     try {
       const apiClient = new MuralApiClient();
-      const body = await apiClient.getPayoutRequestBody(payoutId, orgId);
+      const result = await apiClient.getPayoutRequestBody(payoutId, orgId);
       addLog(`✅ Payout body retrieved successfully!`, 'success');
-      setPayoutPayload(JSON.stringify(body, null, 2));
-      markStepComplete(11);
-      addLog(`➡️ Next: Sign the payout`, 'info');
+      setPayoutPayload(JSON.stringify(result, null, 2));
+      markStepComplete(stepNumber - 1);
+      addLog(`➡️ Next: Sign the payout payload`, 'info');
     } catch (error) {
       addLog(`❌ Failed to get payout body: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
-      setLoading(false);
+      setStepLoading(stepNumber - 1, false);
     }
   };
 
