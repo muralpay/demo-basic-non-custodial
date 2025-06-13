@@ -2,6 +2,288 @@
 // This wraps the @muralpay/browser-sdk for testing
 
 import { NonCustodialSDK } from '@muralpay/browser-sdk';
+import { MURAL_API_CONFIG } from './config';
+
+// Mural API Client for making API calls
+export class MuralApiClient {
+  private baseUrl: string;
+  private apiKey: string;
+
+  constructor() {
+    this.baseUrl = MURAL_API_CONFIG.API_URL!;
+    this.apiKey = MURAL_API_CONFIG.API_KEY!;
+    console.log('MuralApiClient initialized with config');
+  }
+
+  // Create a non-custodial organization
+  async createNonCustodialOrg(payload: any, onBehalfOf?: string): Promise<any> {
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      };
+
+      if (onBehalfOf) {
+        headers['on-behalf-of'] = onBehalfOf;
+      }
+
+      const response = await fetch(`${this.baseUrl}/api/organizations`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(`API Error (${response.status}): ${errorData.message || response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to create organization:', error);
+      throw error;
+    }
+  }
+
+  // Initiate a non-custodial challenge
+  // Note: approverId should be the approver.id from the individual's approver object,
+  // NOT the organization ID. The orgId is used for the on-behalf-of header.
+  async initiateChallenge(payload: { publicKey: string, approverId: string }, orgId: string): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/approvers/non-custodial/initiate-challenge`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+          'on-behalf-of': orgId
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(`API Error (${response.status}): ${errorData.message || response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to initiate challenge:', error);
+      throw error;
+    }
+  }
+
+  // Get payout request body to sign
+  async getPayoutRequestBody(payoutId: string, orgId: string): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/payouts/payout/non-custodial/body-to-sign/${payoutId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'on-behalf-of': orgId
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(`API Error (${response.status}): ${errorData.message || response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to get payout request body:', error);
+      throw error;
+    }
+  }
+
+  // Execute a non-custodial payout
+  async executeNonCustodialPayout(payoutId: string, signature: string, orgId: string): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/payouts/payout/non-custodial/execute/${payoutId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+          'on-behalf-of': orgId
+        },
+        body: JSON.stringify({ signature })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(`API Error (${response.status}): ${errorData.message || response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to execute payout:', error);
+      throw error;
+    }
+  }
+
+  // Get the Terms of Service link for an organization
+  async getOrganizationTosLink(orgId: string): Promise<string> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/organizations/${orgId}/tos-link`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(`API Error (${response.status}): ${errorData.message || response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.tosLink;
+    } catch (error) {
+      console.error('Failed to get TOS link:', error);
+      throw error;
+    }
+  }
+
+  // Get organization details
+  async getOrganization(orgId: string): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/organizations/${orgId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(`API Error (${response.status}): ${errorData.message || response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to get organization details:', error);
+      throw error;
+    }
+  }
+
+  // Get the KYC link for an organization
+  async getOrganizationKycLink(orgId: string): Promise<string> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/organizations/${orgId}/kyc-link`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(`API Error (${response.status}): ${errorData.message || response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.kycLink;
+    } catch (error) {
+      console.error('Failed to get KYC link:', error);
+      throw error;
+    }
+  }
+
+  // Create a payout request
+  async createPayout(payload: any, orgId: string): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/payouts/payout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+          'on-behalf-of': orgId
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(`API Error (${response.status}): ${errorData.message || response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to create payout:', error);
+      throw error;
+    }
+  }
+
+  // Create an account
+  async createAccount(payload: { name: string; description?: string }, orgId: string): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/accounts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+          'on-behalf-of': orgId
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(`API Error (${response.status}): ${errorData.message || response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to create account:', error);
+      throw error;
+    }
+  }
+
+  // Get all accounts
+  async getAccounts(orgId: string): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/accounts`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'on-behalf-of': orgId
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(`API Error (${response.status}): ${errorData.message || response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to get accounts:', error);
+      throw error;
+    }
+  }
+
+  // Get account by ID
+  async getAccount(accountId: string, orgId: string): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/accounts/${accountId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'on-behalf-of': orgId
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(`API Error (${response.status}): ${errorData.message || response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to get account:', error);
+      throw error;
+    }
+  }
+}
 
 export class NonCustodialSDKWrapper {
   private sdk: NonCustodialSDK | null = null;

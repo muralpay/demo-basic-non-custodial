@@ -1,11 +1,25 @@
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
+  const base = {
+    plugins: [react()],
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, 'src')
+      }
+    },
+    server: {
+      port: 5174
+    }
+  };
+
   if (command === 'build') {
-    // Library build configuration
+    // Library build configuration for SDK wrapper
     return {
+      ...base,
       build: {
         lib: {
           entry: resolve(__dirname, 'src/index.ts'),
@@ -13,10 +27,12 @@ export default defineConfig(({ command }) => {
           fileName: 'index'
         },
         rollupOptions: {
-          external: ['mural-browser-sdk'],
+          external: ['react', 'react-dom', '@muralpay/browser-sdk'],
           output: {
             globals: {
-              'mural-browser-sdk': 'MuralBrowserSDK'
+              'react': 'React',
+              'react-dom': 'ReactDOM',
+              '@muralpay/browser-sdk': 'MuralBrowserSDK'
             }
           }
         }
@@ -24,27 +40,18 @@ export default defineConfig(({ command }) => {
     };
   }
 
-  // Development server configuration
+  // Development server configuration for React demo
   return {
-    root: 'test',
-    publicDir: '../dist',
-    server: {
-      port: 5174
-    },
-    resolve: {
-      alias: {
-        '@': resolve(__dirname, 'src')
-      }
+    ...base,
+    define: {
+      global: 'globalThis'
     },
     optimizeDeps: {
-      include: ['mural-browser-sdk'],
+      include: ['@muralpay/browser-sdk'],
       force: true,
       esbuildOptions: {
         target: 'es2020'
       }
-    },
-    define: {
-      global: 'globalThis'
     }
   };
 });

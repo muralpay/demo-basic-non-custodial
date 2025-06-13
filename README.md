@@ -1,26 +1,34 @@
-# Non-Custodial Browser SDK Demo
+# Non-Custodial SDK Demo
 
-A simple demo to test the Non-Custodial Browser SDK functionality.
+A simple demo app to test the Non-Custodial Browser SDK functionality.
 
-## Setup
+## Quick Start
 
-1. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+### 1. Environment Setup
+Create a `.env` file in the root directory:
+```
+VITE_MURAL_API_KEY=your_api_key_here
+VITE_MURAL_API_URL=your_api_url_here
+```
 
-2. **Build and start**:
-   ```bash
-   npm run build
-   npm run dev
-   ```
+### 2. Install & Run
+```bash
+npm install
+npm run dev
+```
 
-3. **Open in browser**: http://localhost:5174
+### 3. Open in Browser
+Visit: http://localhost:5173
 
-## Usage
+## How to Use
 
-1. Click "Initialize SDK" 
-2. Click "Get Public Key" and copy it
-3. Use the public key for email authentication
-4. Enter your authentication code and authenticator ID to start a session
-5. Test payout signing with the authenticated session
+This demo provides a working example with sample data that you can modify:
+
+1. **Initialize SDK** - Sets up the connection
+2. **Get Public Key** - Generates a key for authentication
+3. **Authenticate** - Use your auth code and authenticator ID
+4. **Test Payouts** - Sign transactions with your authenticated session
+
+Feel free to modify the example data in the code to test different scenarios.
+
+That's it! 🚀
