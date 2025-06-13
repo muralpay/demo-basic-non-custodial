@@ -1,5 +1,6 @@
 import React from 'react';
 import { Step, Button, InfoBox, ResultDisplay } from '../ui';
+import { MuralApiClient } from '../../index';
 
 export interface CheckKycStatusStepProps {
   stepNumber: number;
@@ -8,7 +9,11 @@ export interface CheckKycStatusStepProps {
   isLoading: boolean;
   kycStatus: string;
   kycResponse: any;
-  onCheckKycStatus: () => void;
+  orgId: string;
+  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
+  markStepComplete: (stepIndex: number) => void;
+  onKycStatusChange: (status: string, response: any) => void;
+  setLoading: (loading: boolean) => void;
 }
 
 export const CheckKycStatusStep: React.FC<CheckKycStatusStepProps> = ({
@@ -18,13 +23,52 @@ export const CheckKycStatusStep: React.FC<CheckKycStatusStepProps> = ({
   isLoading,
   kycStatus,
   kycResponse,
-  onCheckKycStatus
+  orgId,
+  addLog,
+  markStepComplete,
+  onKycStatusChange,
+  setLoading
 }) => {
   const isActive = currentStep === stepNumber;
 
+  const handleCheckKycStatus = async () => {
+    if (!orgId) {
+      addLog('❌ Please complete previous steps first', 'error');
+      return;
+    }
+    
+    setLoading(true);
+    addLog('🔄 Step 8: Checking KYC verification status...');
+    
+    try {
+      const apiClient = new MuralApiClient();
+      const orgDetails = await apiClient.getOrganization(orgId);
+      const kycStatusValue = orgDetails.kycStatus?.type;
+      
+      onKycStatusChange(kycStatusValue, orgDetails);
+      
+      if (kycStatusValue === 'approved') {
+        addLog(`✅ KYC verification has been approved!`, 'success');
+        markStepComplete(7);
+        addLog(`➡️ Next: Create account`, 'info');
+      } else if (kycStatusValue === 'pending') {
+        addLog(`⚠️ KYC verification is pending review. Please wait for approval.`, 'warning');
+      } else if (kycStatusValue === 'submitted') {
+        addLog(`⚠️ KYC has been submitted and is being reviewed. Please wait for approval.`, 'warning');
+      } else {
+        addLog(`❌ KYC verification has not been completed yet. Status: ${kycStatusValue || 'NOT_STARTED'}`, 'error');
+        addLog(`🔗 Please open the KYC link and complete the verification process.`, 'warning');
+      }
+    } catch (error) {
+      addLog(`❌ Failed to check KYC status: ${error instanceof Error ? error.message : String(error)}`, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const actions = (
     <Button
-      onClick={onCheckKycStatus}
+      onClick={handleCheckKycStatus}
       disabled={!isActive}
       loading={isLoading}
       variant={isCompleted ? 'success' : 'primary'}

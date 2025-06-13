@@ -1,5 +1,6 @@
 import React from 'react';
 import { Step, Button, FormInput } from '../ui';
+import { NonCustodialSDKWrapper } from '../../index';
 
 export interface StartSessionStepProps {
   stepNumber: number;
@@ -8,7 +9,11 @@ export interface StartSessionStepProps {
   isLoading: boolean;
   emailCode: string;
   setEmailCode: (value: string) => void;
-  onStartSession: () => void;
+  wrapper: NonCustodialSDKWrapper | null;
+  authenticatorId: string;
+  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
+  markStepComplete: (stepIndex: number) => void;
+  setLoading: (loading: boolean) => void;
 }
 
 export const StartSessionStep: React.FC<StartSessionStepProps> = ({
@@ -18,14 +23,42 @@ export const StartSessionStep: React.FC<StartSessionStepProps> = ({
   isLoading,
   emailCode,
   setEmailCode,
-  onStartSession
+  wrapper,
+  authenticatorId,
+  addLog,
+  markStepComplete,
+  setLoading
 }) => {
   const isActive = currentStep === stepNumber;
   const canSubmit = isActive && emailCode.trim() !== '';
 
+  const handleStartSession = async () => {
+    if (!wrapper || !emailCode || !authenticatorId) {
+      addLog('❌ Please enter the email verification code first', 'error');
+      return;
+    }
+    
+    setLoading(true);
+    addLog('🔄 Step 6: Starting session with verification code...');
+    
+    try {
+      await wrapper.startSession({
+        code: emailCode,
+        authenticatorId: authenticatorId
+      });
+      addLog(`✅ Session started successfully!`, 'success');
+      markStepComplete(5);
+      addLog(`➡️ Next: Get KYC link`, 'info');
+    } catch (error) {
+      addLog(`❌ Failed to start session: ${error instanceof Error ? error.message : String(error)}`, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const actions = (
     <Button
-      onClick={onStartSession}
+      onClick={handleStartSession}
       disabled={!canSubmit}
       loading={isLoading}
       variant={isCompleted ? 'success' : 'primary'}

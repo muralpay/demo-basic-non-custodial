@@ -3,23 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { NonCustodialSDK } from '@muralpay/browser-sdk';
 import { NonCustodialSDKWrapper, MuralApiClient } from './index';
-import {
-  createOrg,
-  getTosLink,
-  checkTosStatus,
-  initializeSDK,
-  initiateChallenge,
-  startSession,
-  getKycLink,
-  checkKycStatus,
-  createAccount,
-  getAccountDetails,
-  proceedToFunding,
-  createPayout,
-  getPayoutBody,
-  signPayout,
-  executePayout
-} from './steps';
 
 // Import UI components
 import {
@@ -32,14 +15,18 @@ import {
 import {
   CreateOrganizationStep,
   TosLinkStep,
-  SimpleActionStep,
+  CheckTosStatusStep,
+  InitializeSDKStep,
   InitiateChallengeStep,
   StartSessionStep,
   KycLinkStep,
   CheckKycStatusStep,
   CreateAccountStep,
   FundAccountStep,
-  PayoutOperationStep
+  CreatePayoutStep,
+  GetPayoutBodyStep,
+  SignPayoutStep,
+  ExecutePayoutStep
 } from './components/steps';
 
 const NonCustodialDemo: React.FC = () => {
@@ -65,6 +52,8 @@ const NonCustodialDemo: React.FC = () => {
   const [emailCode, setEmailCode] = useState<string>('');
   const [tosLink, setTosLink] = useState<string>('');
   const [tosLinkVisible, setTosLinkVisible] = useState<boolean>(false);
+  const [tosStatus, setTosStatus] = useState<string>('');
+  const [tosResponse, setTosResponse] = useState<any>(null);
   const [kycLink, setKycLink] = useState<string>('');
   const [kycLinkVisible, setKycLinkVisible] = useState<boolean>(false);
   const [kycStatus, setKycStatus] = useState<string>('');
@@ -77,11 +66,11 @@ const NonCustodialDemo: React.FC = () => {
   const [accountInitializing, setAccountInitializing] = useState<boolean>(false);
   const [isLoadingAccountDetails, setIsLoadingAccountDetails] = useState<boolean>(false);
   
-  // Simplified - no payout form fields needed
-  
+  // Payout fields
   const [payoutId, setPayoutId] = useState<string>('');
   const [payoutPayload, setPayoutPayload] = useState<string>('');
   const [signature, setSignature] = useState<string>('');
+  const [payoutStatus, setPayoutStatus] = useState<string>('');
   
   // Flow progress tracking
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -134,255 +123,14 @@ const NonCustodialDemo: React.FC = () => {
     setStepLoading(stepIndex, false);
   };
 
-  // Step wrapper functions that call the imported step functions
-  const handleCreateOrg = async () => {
-    setStepLoading(0, true);
-    try {
-      await createOrg({
-        orgType,
-        firstName,
-        lastName,
-        email,
-        businessName,
-        businessEmail,
-        approvers,
-        addLog,
-        setOrgId,
-        setApproverId,
-        setApproversList,
-        markStepComplete
-      });
-    } finally {
-      setStepLoading(0, false);
-    }
+  const onKycStatusChange = (status: string, response: any) => {
+    setKycStatus(status);
+    setKycResponse(response);
   };
 
-  const handleGetTosLink = async () => {
-    setStepLoading(1, true);
-    try {
-      await getTosLink({
-        orgId,
-        addLog,
-        setTosLink,
-        setTosLinkVisible,
-        markStepComplete
-      });
-    } finally {
-      setStepLoading(1, false);
-    }
-  };
-
-  const handleCheckTosStatus = async () => {
-    setStepLoading(2, true);
-    try {
-      await checkTosStatus({
-        orgId,
-        addLog,
-        markStepComplete
-      });
-    } finally {
-      setStepLoading(2, false);
-    }
-  };
-
-  const handleInitializeSDK = async () => {
-    setStepLoading(3, true);
-    try {
-      await initializeSDK({
-        addLog,
-        setWrapper,
-        markStepComplete,
-        updateStatus
-      });
-    } finally {
-      setStepLoading(3, false);
-    }
-  };
-
-  const handleInitiateChallenge = async () => {
-    setStepLoading(4, true);
-    try {
-      const selectedApproverId = approversList.length > 0 ? approversList[selectedApproverIndex].id : approverId;
-      await initiateChallenge({
-        orgId,
-        approverId: selectedApproverId,
-        wrapper,
-        addLog,
-        setAuthenticatorId,
-        markStepComplete
-      });
-    } finally {
-      setStepLoading(4, false);
-    }
-  };
-
-  const handleStartSession = async () => {
-    setStepLoading(5, true);
-    try {
-      await startSession({
-        wrapper,
-        emailCode,
-        authenticatorId,
-        addLog,
-        markStepComplete
-      });
-    } finally {
-      setStepLoading(5, false);
-    }
-  };
-
-  const handleGetKycLink = async () => {
-    setStepLoading(6, true);
-    try {
-      await getKycLink({
-        orgId,
-        addLog,
-        setKycLink,
-        setKycLinkVisible,
-        markStepComplete
-      });
-    } finally {
-      setStepLoading(6, false);
-    }
-  };
-
-  const handleCheckKycStatus = async () => {
-    setStepLoading(7, true);
-    try {
-      const apiClient = new MuralApiClient();
-      const orgDetails = await apiClient.getOrganization(orgId);
-      
-      // Store the full response for display
-      setKycResponse(orgDetails);
-      setKycStatus(orgDetails.kycStatus?.type || 'NOT_STARTED');
-      
-      await checkKycStatus({
-        orgId,
-        addLog,
-        markStepComplete
-      });
-    } finally {
-      setStepLoading(7, false);
-    }
-  };
-
-  const handleCreateAccount = async () => {
-    setStepLoading(8, true);
-    setAccountInitializing(true);
-    try {
-      await createAccount({
-        orgId,
-        accountName,
-        addLog,
-        setAccountId,
-        setAccountAddress,
-        markStepComplete
-      });
-      
-      // Check if we got an address, if not, account is still initializing
-      if (!accountAddress) {
-        addLog('⏳ Account created but still initializing. This typically takes around 3 minutes...', 'warning');
-      }
-    } finally {
-      setStepLoading(8, false);
-      if (accountAddress) {
-        setAccountInitializing(false);
-      }
-    }
-  };
-
-  const handleGetAccountDetails = async () => {
-    setIsLoadingAccountDetails(true);
-    try {
-      await getAccountDetails({
-        orgId,
-        accountId,
-        addLog,
-        setAccountAddress
-      });
-      
-      // Check if we now have an address, if so, account is no longer initializing
-      if (accountAddress) {
-        setAccountInitializing(false);
-      }
-    } catch (error) {
-      // Handle error if needed
-    } finally {
-      setIsLoadingAccountDetails(false);
-    }
-  };
-
-  const handleProceedToFunding = async () => {
-    setStepLoading(9, true);
-    try {
-      await proceedToFunding({
-        accountAddress,
-        addLog,
-        markStepComplete
-      });
-    } finally {
-      setStepLoading(9, false);
-    }
-  };
-
-  const handleCreatePayout = async () => {
-    setStepLoading(10, true);
-    try {
-      await createPayout({
-        orgId,
-        accountId,
-        addLog,
-        setPayoutId,
-        markStepComplete
-      });
-    } finally {
-      setStepLoading(10, false);
-    }
-  };
-
-  const handleGetPayoutBody = async () => {
-    setStepLoading(11, true);
-    try {
-      await getPayoutBody({
-        orgId,
-        payoutId,
-        addLog,
-        setPayoutPayload,
-        markStepComplete
-      });
-    } finally {
-      setStepLoading(11, false);
-    }
-  };
-
-  const handleSignPayout = async () => {
-    setStepLoading(12, true);
-    try {
-      await signPayout({
-        wrapper,
-        payoutPayload,
-        addLog,
-        setSignature,
-        markStepComplete
-      });
-    } finally {
-      setStepLoading(12, false);
-    }
-  };
-
-  const handleExecutePayout = async () => {
-    setStepLoading(13, true);
-    try {
-      await executePayout({
-        orgId,
-        payoutId,
-        signature,
-        addLog,
-        markStepComplete
-      });
-    } finally {
-      setStepLoading(13, false);
-    }
+  const onTosStatusChange = (status: string, response: any) => {
+    setTosStatus(status);
+    setTosResponse(response);
   };
 
   const clearLog = () => {
@@ -450,8 +198,13 @@ const NonCustodialDemo: React.FC = () => {
         approverId={approverId}
         approversList={approversList}
         selectedApproverIndex={selectedApproverIndex}
+        addLog={addLog}
+        markStepComplete={markStepComplete}
+        setOrgId={setOrgId}
+        setApproverId={setApproverId}
+        setApproversList={setApproversList}
         setSelectedApproverIndex={setSelectedApproverIndex}
-        onCreateOrg={handleCreateOrg}
+        setLoading={setStepLoading.bind(null, 0)}
       />
 
       {/* Step 2: TOS Link */}
@@ -462,32 +215,40 @@ const NonCustodialDemo: React.FC = () => {
         isLoading={loadingStates[1]}
         tosLink={tosLink}
         tosLinkVisible={tosLinkVisible}
-        onGetTosLink={handleGetTosLink}
+        orgId={orgId}
+        addLog={addLog}
+        markStepComplete={markStepComplete}
+        setTosLink={setTosLink}
+        setTosLinkVisible={setTosLinkVisible}
+        setLoading={setStepLoading.bind(null, 1)}
       />
 
       {/* Step 3: Check TOS Status */}
-      <SimpleActionStep
-        title="Accept Terms of Service"
-        description="After accepting the TOS via the link above, click to verify acceptance:"
+      <CheckTosStatusStep
         stepNumber={3}
         currentStep={currentStep}
         isCompleted={completedSteps[2]}
         isLoading={loadingStates[2]}
-        buttonText="Check TOS Status"
-        completedButtonText="✅ TOS Accepted"
-        onAction={handleCheckTosStatus}
+        tosStatus={tosStatus}
+        tosResponse={tosResponse}
+        orgId={orgId}
+        addLog={addLog}
+        markStepComplete={markStepComplete}
+        onTosStatusChange={onTosStatusChange}
+        setLoading={setStepLoading.bind(null, 2)}
       />
 
       {/* Step 4: Initialize SDK */}
-      <SimpleActionStep
-        title="Initialize SDK"
+      <InitializeSDKStep
         stepNumber={4}
         currentStep={currentStep}
         isCompleted={completedSteps[3]}
         isLoading={loadingStates[3]}
-        buttonText="Initialize SDK"
-        completedButtonText="✅ SDK Initialized"
-        onAction={handleInitializeSDK}
+        addLog={addLog}
+        setWrapper={setWrapper}
+        markStepComplete={markStepComplete}
+        updateStatus={updateStatus}
+        setLoading={setStepLoading.bind(null, 3)}
       />
 
       {/* Step 5: Initiate Challenge */}
@@ -499,7 +260,13 @@ const NonCustodialDemo: React.FC = () => {
         approversList={approversList}
         selectedApproverIndex={selectedApproverIndex}
         authenticatorId={authenticatorId}
-        onInitiateChallenge={handleInitiateChallenge}
+        orgId={orgId}
+        approverId={approversList.length > 0 ? approversList[selectedApproverIndex]?.id : approverId}
+        wrapper={wrapper}
+        addLog={addLog}
+        setAuthenticatorId={setAuthenticatorId}
+        markStepComplete={markStepComplete}
+        setLoading={setStepLoading.bind(null, 4)}
       />
 
       {/* Step 6: Start Session */}
@@ -510,7 +277,11 @@ const NonCustodialDemo: React.FC = () => {
         isLoading={loadingStates[5]}
         emailCode={emailCode}
         setEmailCode={setEmailCode}
-        onStartSession={handleStartSession}
+        wrapper={wrapper}
+        authenticatorId={authenticatorId}
+        addLog={addLog}
+        markStepComplete={markStepComplete}
+        setLoading={setStepLoading.bind(null, 5)}
       />
 
       {/* Step 7: Get KYC Link */}
@@ -521,7 +292,12 @@ const NonCustodialDemo: React.FC = () => {
         isLoading={loadingStates[6]}
         kycLink={kycLink}
         kycLinkVisible={kycLinkVisible}
-        onGetKycLink={handleGetKycLink}
+        orgId={orgId}
+        addLog={addLog}
+        markStepComplete={markStepComplete}
+        setKycLink={setKycLink}
+        setKycLinkVisible={setKycLinkVisible}
+        setLoading={setStepLoading.bind(null, 6)}
       />
 
       {/* Step 8: Check KYC Status */}
@@ -532,7 +308,11 @@ const NonCustodialDemo: React.FC = () => {
         isLoading={loadingStates[7]}
         kycStatus={kycStatus}
         kycResponse={kycResponse}
-        onCheckKycStatus={handleCheckKycStatus}
+        orgId={orgId}
+        addLog={addLog}
+        markStepComplete={markStepComplete}
+        onKycStatusChange={onKycStatusChange}
+        setLoading={setStepLoading.bind(null, 7)}
       />
 
       {/* Step 9: Create Account */}
@@ -546,9 +326,14 @@ const NonCustodialDemo: React.FC = () => {
         accountId={accountId}
         accountAddress={accountAddress}
         accountInitializing={accountInitializing}
-        onCreateAccount={handleCreateAccount}
-        onGetAccountDetails={handleGetAccountDetails}
+        orgId={orgId}
+        addLog={addLog}
+        markStepComplete={markStepComplete}
+        setAccountId={setAccountId}
+        setAccountAddress={setAccountAddress}
+        setLoading={setStepLoading.bind(null, 8)}
         isLoadingAccountDetails={isLoadingAccountDetails}
+        setLoadingAccountDetails={setIsLoadingAccountDetails}
       />
 
       {/* Step 10: Fund Account */}
@@ -558,82 +343,70 @@ const NonCustodialDemo: React.FC = () => {
         isCompleted={completedSteps[9]}
         isLoading={loadingStates[9]}
         accountAddress={accountAddress}
-        onProceedToFunding={handleProceedToFunding}
+        addLog={addLog}
+        markStepComplete={markStepComplete}
+        setLoading={setStepLoading.bind(null, 9)}
       />
 
       {/* Step 11: Create Payout */}
-      <PayoutOperationStep
-        title="Create Payout Request"
-        description="This will create a random test payout of $2 USDC to demonstrate the payout functionality. The payout will be sent to a fictional recipient (John Smith) with test banking details to showcase the complete flow."
+      <CreatePayoutStep
         stepNumber={11}
         currentStep={currentStep}
         isCompleted={completedSteps[10]}
         isLoading={loadingStates[10]}
-        buttonText="Create Test Payout ($2 USDC)"
-        completedButtonText="✅ Test Payout Created"
-        onAction={handleCreatePayout}
-        resultValue={payoutId}
-        resultLabel="Payout ID"
-      >
-        <div style={{
-          padding: '16px',
-          borderRadius: '8px',
-          marginTop: '15px',
-          fontSize: '0.95rem',
-          lineHeight: '1.5',
-          backgroundColor: '#dbeafe',
-          color: '#1e40af',
-          border: '1px solid #93c5fd'
-        }}>
-          <p style={{ marginBottom: '5px', fontSize: '14px' }}>
-            <strong>Test Payout Details:</strong>
-          </p>
-          <ul style={{ marginBottom: 0, fontSize: '14px' }}>
-            <li>Amount: $2 USDC</li>
-            <li>Recipient: John Smith (fictional)</li>
-            <li>Bank: Chase Bank (test routing number)</li>
-            <li>Purpose: Functionality testing</li>
-          </ul>
-        </div>
-      </PayoutOperationStep>
+        payoutId={payoutId}
+        orgId={orgId}
+        accountId={accountId}
+        addLog={addLog}
+        setPayoutId={setPayoutId}
+        markStepComplete={markStepComplete}
+        setLoading={setStepLoading.bind(null, 10)}
+      />
 
       {/* Step 12: Get Payout Body */}
-      <PayoutOperationStep
-        title="Get Payout Body to Sign"
+      <GetPayoutBodyStep
         stepNumber={12}
         currentStep={currentStep}
         isCompleted={completedSteps[11]}
         isLoading={loadingStates[11]}
-        buttonText="Get Payout Body"
-        completedButtonText="✅ Payout Body Retrieved"
-        onAction={handleGetPayoutBody}
-        payloadValue={payoutPayload}
-        payloadLabel="Payout Payload (JSON):"
+        payoutPayload={payoutPayload}
+        orgId={orgId}
+        payoutId={payoutId}
+        addLog={addLog}
+        setPayoutPayload={setPayoutPayload}
+        markStepComplete={markStepComplete}
+        setLoading={setStepLoading.bind(null, 11)}
       />
 
       {/* Step 13: Sign Payout */}
-      <PayoutOperationStep
-        title="Sign Payout"
+      <SignPayoutStep
         stepNumber={13}
         currentStep={currentStep}
         isCompleted={completedSteps[12]}
         isLoading={loadingStates[12]}
-        buttonText="Sign Payout"
-        completedButtonText="✅ Payout Signed"
-        onAction={handleSignPayout}
-        resultValue={signature}
+        signature={signature}
+        wrapper={wrapper}
+        payoutPayload={payoutPayload}
+        addLog={addLog}
+        setSignature={setSignature}
+        markStepComplete={markStepComplete}
+        setLoading={setStepLoading.bind(null, 12)}
       />
 
       {/* Step 14: Execute Payout */}
-      <SimpleActionStep
-        title="Execute Payout"
+      <ExecutePayoutStep
         stepNumber={14}
         currentStep={currentStep}
         isCompleted={completedSteps[13]}
         isLoading={loadingStates[13]}
-        buttonText="Execute Payout"
-        completedButtonText="✅ Payout Executed"
-        onAction={handleExecutePayout}
+        payoutStatus={payoutStatus}
+        orgId={orgId}
+        payoutId={payoutId}
+        signature={signature}
+        addLog={addLog}
+        setPayoutStatus={setPayoutStatus}
+        markStepComplete={markStepComplete}
+        setLoading={setStepLoading.bind(null, 13)}
       />
 
       {/* Success Message */}

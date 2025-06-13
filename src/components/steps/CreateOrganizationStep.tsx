@@ -1,6 +1,6 @@
 import React from 'react';
 import { Step, Button, FormInput, RadioGroup, InfoBox, ResultDisplay } from '../ui';
-import { createOrg } from '../../steps';
+import { MuralApiClient } from '../../index';
 
 export interface CreateOrganizationStepProps {
   // Form state
@@ -30,10 +30,15 @@ export interface CreateOrganizationStepProps {
   approverId: string;
   approversList: Array<{id: string, name: string, email: string}>;
   selectedApproverIndex: number;
-  setSelectedApproverIndex: (index: number) => void;
-  
+
   // Actions
-  onCreateOrg: () => void;
+  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
+  markStepComplete: (stepIndex: number) => void;
+  setOrgId: (id: string) => void;
+  setApproverId: (id: string) => void;
+  setApproversList: (approvers: Array<{id: string, name: string, email: string}>) => void;
+  setSelectedApproverIndex: (index: number) => void;
+  setLoading: (loading: boolean) => void;
 }
 
 export const CreateOrganizationStep: React.FC<CreateOrganizationStepProps> = ({
@@ -59,9 +64,104 @@ export const CreateOrganizationStep: React.FC<CreateOrganizationStepProps> = ({
   approverId,
   approversList,
   selectedApproverIndex,
+  addLog,
+  markStepComplete,
+  setOrgId,
+  setApproverId,
+  setApproversList,
   setSelectedApproverIndex,
-  onCreateOrg
+  setLoading
 }) => {
+  const handleCreateOrg = async () => {
+    let payload;
+    if (orgType === 'nonCustodialIndividual') {
+      if (!firstName || !lastName || !email) {
+        addLog('❌ Please fill in all individual fields', 'error');
+        return;
+      }
+      payload = { type: 'nonCustodialIndividual', firstName, lastName, email };
+    } else {
+      if (!businessName || !businessEmail) {
+        addLog('❌ Please fill in business name and email', 'error');
+        return;
+      }
+      let approversArray = [];
+      try {
+        if (approvers) {
+          approversArray = JSON.parse(approvers);
+        }
+      } catch (error) {
+        addLog('❌ Invalid JSON for approvers', 'error');
+        return;
+      }
+      payload = { type: 'nonCustodialBusiness', businessName, email: businessEmail, approvers: approversArray };
+    }
+    
+    setLoading(true);
+    addLog(`🔄 Step 1: Creating ${orgType} organization...`);
+    
+    try {
+      const apiClient = new MuralApiClient();
+      const result = await apiClient.createNonCustodialOrg(payload);
+      addLog(`✅ Organization created successfully!`, 'success');
+      addLog(`📋 Organization ID: ${result.id}`, 'success');
+      setOrgId(result.id);
+      
+      // Handle approvers based on organization type
+      if (orgType === 'nonCustodialIndividual') {
+        // For individual orgs, there's typically one approver (the individual themselves)
+        if (result.approver && result.approver.id) {
+          setApproverId(result.approver.id);
+          addLog(`📋 Approver ID: ${result.approver.id}`, 'success');
+          
+          // Set single approver in the list
+          setApproversList([{
+            id: result.approver.id,
+            name: `${firstName} ${lastName}`,
+            email: email
+          }]);
+        }
+      } else {
+        // For business orgs, handle multiple approvers
+        if (result.approvers && Array.isArray(result.approvers)) {
+          const approversListData = result.approvers.map((approver: any, index: number) => ({
+            id: approver.id,
+            name: approver.name || `Approver ${index + 1}`,
+            email: approver.email || 'No email'
+          }));
+          
+          setApproversList(approversListData);
+          addLog(`📋 ${approversListData.length} approvers available:`, 'success');
+          approversListData.forEach((approver, index) => {
+            addLog(`   ${index + 1}. ${approver.name} (${approver.email}) - ID: ${approver.id}`, 'info');
+          });
+          
+          // Set the first approver as default
+          if (approversListData.length > 0) {
+            setApproverId(approversListData[0].id);
+          }
+        } else if (result.approver && result.approver.id) {
+          // Fallback for single approver in business org
+          setApproverId(result.approver.id);
+          addLog(`📋 Approver ID: ${result.approver.id}`, 'success');
+          
+          setApproversList([{
+            id: result.approver.id,
+            name: result.approver.name || 'Business Approver',
+            email: result.approver.email || businessEmail
+          }]);
+        }
+      }
+      
+      markStepComplete(0);
+      addLog(`➡️ Next: Get Terms of Service link`, 'info');
+    } catch (error) {
+      addLog(`❌ Failed to create organization: ${error instanceof Error ? error.message : String(error)}`, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const orgTypeOptions = [
     { value: 'nonCustodialIndividual', label: 'Individual' },
     { value: 'nonCustodialBusiness', label: 'Business' }
@@ -91,7 +191,7 @@ export const CreateOrganizationStep: React.FC<CreateOrganizationStepProps> = ({
 
   const actions = (
     <Button
-      onClick={onCreateOrg}
+      onClick={handleCreateOrg}
       disabled={!canSubmit}
       loading={isLoading}
       variant={isCompleted ? 'success' : 'primary'}

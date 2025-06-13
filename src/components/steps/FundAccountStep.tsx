@@ -7,7 +7,9 @@ export interface FundAccountStepProps {
   isCompleted: boolean;
   isLoading: boolean;
   accountAddress: string;
-  onProceedToFunding: () => void;
+  addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
+  markStepComplete: (stepIndex: number) => void;
+  setLoading: (loading: boolean) => void;
 }
 
 export const FundAccountStep: React.FC<FundAccountStepProps> = ({
@@ -16,13 +18,29 @@ export const FundAccountStep: React.FC<FundAccountStepProps> = ({
   isCompleted,
   isLoading,
   accountAddress,
-  onProceedToFunding
+  addLog,
+  markStepComplete,
+  setLoading
 }) => {
   const isActive = currentStep === stepNumber;
 
+  const handleProceedToFunding = async () => {
+    if (!accountAddress) {
+      addLog('❌ Account address not available. Please create account first.', 'error');
+      return;
+    }
+    
+    setLoading(true);
+    addLog('ℹ️ Step 10: Please follow the funding instructions above', 'info');
+    addLog('💰 Once you have funded your account with USDC, click "Continue to Payout"', 'warning');
+    markStepComplete(9);
+    addLog(`➡️ Next: Create a payout`, 'info');
+    setLoading(false);
+  };
+
   const actions = (
     <Button
-      onClick={onProceedToFunding}
+      onClick={handleProceedToFunding}
       disabled={!isActive || !accountAddress}
       loading={isLoading}
       variant={isCompleted ? 'success' : 'primary'}
