@@ -1,7 +1,7 @@
 // If you encounter a "Cannot find module 'react'" error, run: npm install @types/react
 
 import React from 'react';
-import { NonCustodialProvider, useNonCustodialContext } from './context/NonCustodialContext';
+import { NonCustodialProvider, useEndUserCustodialContext } from './context/NonCustodialContext';
 
 // Import UI components
 import {
@@ -35,7 +35,7 @@ const NonCustodialDemoContent: React.FC = () => {
     status,
     currentStep,
     completedSteps
-  } = useNonCustodialContext();
+  } = useEndUserCustodialContext();
 
   // Step names for progress tracker
   const stepNames = [
@@ -67,7 +67,7 @@ const NonCustodialDemoContent: React.FC = () => {
   return (
     <div style={containerStyles}>
       <Header 
-        title="🎨 Non-Custodial Browser SDK Demo"
+        title="🎨 End-User Custodial Browser SDK Demo"
         status={status}
       />
       

@@ -28,8 +28,8 @@ interface NonCustodialContextType {
   setWrapper: (wrapper: NonCustodialSDKWrapper | null) => void;
   
   // Organization fields
-  orgType: 'nonCustodialIndividual' | 'nonCustodialBusiness';
-  setOrgType: (type: 'nonCustodialIndividual' | 'nonCustodialBusiness') => void;
+  orgType: 'endUserCustodialIndividual' | 'endUserCustodialBusiness';
+  setOrgType: (type: 'endUserCustodialIndividual' | 'endUserCustodialBusiness') => void;
   firstName: string;
   setFirstName: (name: string) => void;
   lastName: string;
@@ -125,12 +125,12 @@ export const NonCustodialProvider: React.FC<NonCustodialProviderProps> = ({ chil
   const [wrapper, setWrapper] = useState<NonCustodialSDKWrapper | null>(null);
   const [log, setLog] = useState<string[]>([]);
   const [status, setStatus] = useState<StatusData>({ 
-    message: 'Ready to start non-custodial flow', 
+    message: 'Ready to start end-user custodial flow', 
     type: 'ready' 
   });
   
   // Organization creation fields
-  const [orgType, setOrgType] = useState<'nonCustodialIndividual' | 'nonCustodialBusiness'>('nonCustodialIndividual');
+  const [orgType, setOrgType] = useState<'endUserCustodialIndividual' | 'endUserCustodialBusiness'>('endUserCustodialIndividual');
   const [firstName, setFirstName] = useState<string>('');
   const [lastName, setLastName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
@@ -323,10 +323,10 @@ export const NonCustodialProvider: React.FC<NonCustodialProviderProps> = ({ chil
   );
 };
 
-export const useNonCustodialContext = () => {
+export const useEndUserCustodialContext = () => {
   const context = useContext(NonCustodialContext);
   if (context === undefined) {
-    throw new Error('useNonCustodialContext must be used within a NonCustodialProvider');
+    throw new Error('useEndUserCustodialContext must be used within a EndUserCustodialProvider');
   }
   return context;
 }; 

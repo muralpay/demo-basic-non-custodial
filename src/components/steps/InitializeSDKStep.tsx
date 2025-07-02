@@ -1,7 +1,7 @@
 import React from 'react';
 import { Step, Button, InfoBox, ResultDisplay } from '../ui';
 import { NonCustodialSDKWrapper } from '../../index';
-import { useNonCustodialContext } from '../../context/NonCustodialContext';
+import { useEndUserCustodialContext } from '../../context/NonCustodialContext';
 
 interface InitializeSDKStepProps {
   stepNumber: number;
@@ -18,7 +18,7 @@ export const InitializeSDKStep: React.FC<InitializeSDKStepProps> = ({
     markStepComplete,
     setWrapper,
     setStepLoading
-  } = useNonCustodialContext();
+  } = useEndUserCustodialContext();
 
   const isCompleted = completedSteps[stepNumber - 1];
   const isLoading = loadingStates[stepNumber - 1];

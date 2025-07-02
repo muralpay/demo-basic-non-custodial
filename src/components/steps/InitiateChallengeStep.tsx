@@ -1,6 +1,6 @@
 import React from 'react';
 import { Step, Button, InfoBox, ResultDisplay, FormInput } from '../ui';
-import { useNonCustodialContext } from '../../context/NonCustodialContext';
+import { useEndUserCustodialContext } from '../../context/NonCustodialContext';
 import { MuralApiClient, NonCustodialSDKWrapper } from '../../index';
 
 interface InitiateChallengeStepProps {
@@ -25,7 +25,7 @@ export const InitiateChallengeStep: React.FC<InitiateChallengeStepProps> = ({
     setAuthenticatorId,
     setSelectedApproverIndex,
     setStepLoading
-  } = useNonCustodialContext();
+  } = useEndUserCustodialContext();
 
   const isCompleted = completedSteps[stepNumber - 1];
   const isLoading = loadingStates[stepNumber - 1];
