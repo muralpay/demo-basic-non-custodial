@@ -1,7 +1,7 @@
 import React from 'react';
 import { Step, Button, InfoBox, ResultDisplay } from '../ui';
 import { MuralApiClient } from '../../index';
-import { useEndUserCustodialContext } from '../../context/NonCustodialContext';
+import { useEndUserCustodialContext } from '../../context/EndUserCustodialContext';
 
 interface CheckKycStatusStepProps {
   stepNumber: number;

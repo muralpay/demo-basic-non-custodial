@@ -1,6 +1,6 @@
 import React from 'react';
 import { Step, Button, FormInput, InfoBox } from '../ui';
-import { useEndUserCustodialContext } from '../../context/NonCustodialContext';
+import { useEndUserCustodialContext } from '../../context/EndUserCustodialContext';
 
 interface StartSessionStepProps {
   stepNumber: number;

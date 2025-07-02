@@ -1,7 +1,7 @@
 import React from 'react';
 import { Step, Button, FormInput, RadioGroup, InfoBox, ResultDisplay } from '../ui';
 import { MuralApiClient } from '../../index';
-import { useEndUserCustodialContext } from '../../context/NonCustodialContext';
+import { useEndUserCustodialContext } from '../../context/EndUserCustodialContext';
 
 interface CreateOrganizationStepProps {
   stepNumber: number;
@@ -81,7 +81,7 @@ export const CreateOrganizationStep: React.FC<CreateOrganizationStepProps> = ({
     
     try {
       const apiClient = new MuralApiClient();
-      const result = await apiClient.createNonCustodialOrg(payload);
+      const result = await apiClient.createEndUserCustodialOrg(payload);
       addLog(`✅ Organization created successfully!`, 'success');
       addLog(`📋 Organization ID: ${result.id}`, 'success');
       setOrgId(result.id);

@@ -16,7 +16,7 @@ export class MuralApiClient {
   }
 
   // Create a non-custodial organization
-  async createNonCustodialOrg(payload: any, onBehalfOf?: string): Promise<any> {
+  async createEndUserCustodialOrg(payload: any, onBehalfOf?: string): Promise<any> {
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -96,7 +96,7 @@ export class MuralApiClient {
   }
 
   // Execute a non-custodial payout
-  async executeNonCustodialPayout(payoutId: string, signature: string, orgId: string): Promise<any> {
+  async executeEndUserCustodialPayout(payoutId: string, signature: string, orgId: string): Promise<any> {
     try {
       const response = await fetch(`${this.baseUrl}/api/payouts/payout/end-user-custodial/execute/${payoutId}`, {
         method: 'POST',
@@ -285,7 +285,7 @@ export class MuralApiClient {
   }
 }
 
-export class NonCustodialSDKWrapper {
+export class EndUserCustodialSDKWrapper {
   private sdk: EndUserCustodialSDK | null = null;
   private iframeElement: HTMLElement | null = null;
 
@@ -416,4 +416,4 @@ export class NonCustodialSDKWrapper {
   }
 }
 
-export default NonCustodialSDKWrapper; 
+export default EndUserCustodialSDKWrapper; 

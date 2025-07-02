@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { NonCustodialSDKWrapper } from '../index';
+import {  EndUserCustodialSDKWrapper } from '../index';
 
 // Types
 interface ApproverData {
@@ -13,7 +13,7 @@ interface StatusData {
   type: 'ready' | 'error' | 'warning';
 }
 
-interface NonCustodialContextType {
+interface EndUserCustodialContextType {
   // Logging
   log: string[];
   addLog: (message: string, type?: 'info' | 'error' | 'success' | 'warning') => void;
@@ -24,8 +24,8 @@ interface NonCustodialContextType {
   updateStatus: (message: string, type?: 'ready' | 'error' | 'warning') => void;
   
   // SDK
-  wrapper: NonCustodialSDKWrapper | null;
-  setWrapper: (wrapper: NonCustodialSDKWrapper | null) => void;
+  wrapper: EndUserCustodialSDKWrapper | null;
+  setWrapper: (wrapper: EndUserCustodialSDKWrapper | null) => void;
   
   // Organization fields
   orgType: 'endUserCustodialIndividual' | 'endUserCustodialBusiness';
@@ -114,15 +114,15 @@ interface NonCustodialContextType {
   markStepComplete: (stepIndex: number) => void;
 }
 
-const NonCustodialContext = createContext<NonCustodialContextType | undefined>(undefined);
+const EndUserCustodialContext = createContext<EndUserCustodialContextType | undefined>(undefined);
 
-interface NonCustodialProviderProps {
+interface EndUserCustodialProviderProps {
   children: ReactNode;
 }
 
-export const NonCustodialProvider: React.FC<NonCustodialProviderProps> = ({ children }) => {
+export const EndUserCustodialProvider: React.FC<EndUserCustodialProviderProps> = ({ children }) => {
   // All the state variables
-  const [wrapper, setWrapper] = useState<NonCustodialSDKWrapper | null>(null);
+  const [wrapper, setWrapper] = useState<EndUserCustodialSDKWrapper | null>(null);
   const [log, setLog] = useState<string[]>([]);
   const [status, setStatus] = useState<StatusData>({ 
     message: 'Ready to start end-user custodial flow', 
@@ -215,7 +215,7 @@ export const NonCustodialProvider: React.FC<NonCustodialProviderProps> = ({ chil
     setLog(['🧹 Log cleared.']);
   };
 
-  const contextValue: NonCustodialContextType = {
+  const contextValue: EndUserCustodialContextType = {
     // Logging
     log,
     addLog,
@@ -317,14 +317,14 @@ export const NonCustodialProvider: React.FC<NonCustodialProviderProps> = ({ chil
   };
 
   return (
-    <NonCustodialContext.Provider value={contextValue}>
+    <EndUserCustodialContext.Provider value={contextValue}>
       {children}
-    </NonCustodialContext.Provider>
+    </EndUserCustodialContext.Provider>
   );
 };
 
 export const useEndUserCustodialContext = () => {
-  const context = useContext(NonCustodialContext);
+  const context = useContext(EndUserCustodialContext);
   if (context === undefined) {
     throw new Error('useEndUserCustodialContext must be used within a EndUserCustodialProvider');
   }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Step, Button, InfoBox, ResultDisplay, FormInput } from '../ui';
 import { MuralApiClient } from '../../index';
-import { useEndUserCustodialContext } from '../../context/NonCustodialContext';
+import { useEndUserCustodialContext } from '../../context/EndUserCustodialContext';
 
 interface GetPayoutBodyStepProps {
   stepNumber: number;

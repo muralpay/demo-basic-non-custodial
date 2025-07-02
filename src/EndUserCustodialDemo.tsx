@@ -1,7 +1,7 @@
 // If you encounter a "Cannot find module 'react'" error, run: npm install @types/react
 
 import React from 'react';
-import { NonCustodialProvider, useEndUserCustodialContext } from './context/NonCustodialContext';
+import { EndUserCustodialProvider, useEndUserCustodialContext } from './context/EndUserCustodialContext';
 
 // Import UI components
 import {
@@ -28,7 +28,7 @@ import {
   ExecutePayoutStep
 } from './components/steps';
 
-const NonCustodialDemoContent: React.FC = () => {
+const EndUserCustodialDemoContent: React.FC = () => {
   const {
     log,
     clearLog,
@@ -104,12 +104,12 @@ const NonCustodialDemoContent: React.FC = () => {
   );
 };
 
-const NonCustodialDemo: React.FC = () => {
+const EndUserCustodialDemo: React.FC = () => {
   return (
-    <NonCustodialProvider>
-      <NonCustodialDemoContent />
-    </NonCustodialProvider>
+    <EndUserCustodialProvider>
+      <EndUserCustodialDemoContent />
+    </EndUserCustodialProvider>
   );
 };
 
-export default NonCustodialDemo; 
+export default EndUserCustodialDemo; 

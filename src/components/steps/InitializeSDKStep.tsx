@@ -1,7 +1,7 @@
 import React from 'react';
 import { Step, Button, InfoBox, ResultDisplay } from '../ui';
-import { NonCustodialSDKWrapper } from '../../index';
-import { useEndUserCustodialContext } from '../../context/NonCustodialContext';
+import { EndUserCustodialSDKWrapper } from '../../index';
+import { useEndUserCustodialContext } from '../../context/EndUserCustodialContext';
 
 interface InitializeSDKStepProps {
   stepNumber: number;
@@ -30,7 +30,7 @@ export const InitializeSDKStep: React.FC<InitializeSDKStepProps> = ({
     addLog('🔄 Step 4: Initializing SDK...');
     
     try {
-      const newWrapper = new NonCustodialSDKWrapper();
+      const newWrapper = new EndUserCustodialSDKWrapper();
       const success = await newWrapper.initialize('auth-iframe-container-id');
       if (success) {
         setWrapper(newWrapper);
